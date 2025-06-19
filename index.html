@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>astro@sasi:~</title>
+    <!-- Google Fonts for Monospaced font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Reset and Basic Setup */
+        :root {
+            --black: #0d0c0f;
+            --dark-gray: #1a1a1d;
+            --gray: #4e4e50;
+            --light-gray: #c5c6c7;
+            --cyan: #66fcf1;
+            --green: #50fa7b;
+            --amber: #f1fa8c;
+            --pink: #ff79c6;
+            --purple: #bd93f9;
+            --font-family: 'Fira Code', 'Courier New', monospace;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: var(--black);
+            color: var(--light-gray);
+            font-family: var(--font-family);
+            font-size: 16px;
+            overflow: hidden; /* Prevent scrolling of the whole page */
+        }
+
+        /* Starfield Background Animation */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(1px 1px at 20% 30%, var(--light-gray), transparent),
+                radial-gradient(1px 1px at 80% 10%, var(--light-gray), transparent),
+                radial-gradient(1px 1px at 50% 50%, var(--light-gray), transparent),
+                radial-gradient(1px 1px at 90% 70%, var(--cyan), transparent),
+                radial-gradient(1px 1px at 10% 90%, var(--amber), transparent),
+                radial-gradient(1px 1px at 40% 20%, var(--green), transparent),
+                radial-gradient(1px 1px at 70% 85%, var(--pink), transparent);
+            background-size: 300px 300px;
+            animation: moveStars 200s linear infinite;
+            z-index: -2;
+        }
+
+        @keyframes moveStars {
+            from { background-position: 0 0; }
+            to { background-position: -10000px 5000px; }
+        }
+
+        /* CRT Scanline and Glow Effect */
+        #terminal::after {
+            content: ' ';
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+          0% { opacity: 0.2; }
+          20% { opacity: 0.8; }
+          40% { opacity: 0.3; }
+          60% { opacity: 0.9; }
+          80% { opacity: 0.2; }
+          100% { opacity: 1; }
+        }
+
+        /* Main Terminal Container */
+        #terminal {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 100vh;
+            width: 100%;
+            max-width: 1200px;
+            margin: auto;
+            background-color: rgba(13, 12, 15, 0.85);
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            box-shadow: 0 0 20px var(--cyan), 0 0 30px var(--purple) inset;
+            backdrop-filter: blur(5px);
+            position: relative;
+        }
+
+        /* Terminal Title Bar */
+        .title-bar {
+            background: linear-gradient(90deg, #2a2a2d, #1a1a1d);
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--gray);
+            border-top-left-radius: 7px;
+            border-top-right-radius: 7px;
+            display: flex;
+            align-items: center;
+            user-select: none;
+        }
+
+        .title-bar .buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .title-bar .button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .button.red { background-color: #ff5f56; }
+        .button.yellow { background-color: #ffbd2e; }
+        .button.green { background-color: #27c93f; }
+
+        .title-bar .title {
+            color: var(--light-gray);
+            margin: 0 auto;
+            font-weight: 500;
+        }
+
+        /* Terminal Content Area */
+        #content {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            overflow-x: hidden;
+            word-wrap: break-word;
+        }
+
+        /* Custom scrollbar */
+        #content::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        #content::-webkit-scrollbar-track {
+          background: var(--dark-gray);
+        }
+
+        #content::-webkit-scrollbar-thumb {
+          background-color: var(--gray);
+          border-radius: 4px;
+          border: 2px solid var(--dark-gray);
+        }
+
+        /* Command Line and Input */
+        .line {
+            line-height: 1.6;
+        }
+
+        .prompt {
+            color: var(--cyan);
+            user-select: none;
+        }
+        .prompt .user { color: var(--green); }
+        .prompt .path { color: var(--purple); }
+
+        .command-input {
+            background-color: transparent;
+            border: none;
+            color: var(--light-gray);
+            font-family: var(--font-family);
+            font-size: 1em;
+            width: calc(100% - 150px); /* Adjust based on prompt length */
+        }
+        .command-input:focus {
+            outline: none;
+        }
+
+        /* Blinking Cursor */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--light-gray);
+            animation: blink 1s steps(1) infinite;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+
+        @keyframes blink {
+          50% { background-color: transparent; }
+        }
+
+        /* Output Formatting */
+        .output .command-result { margin-bottom: 1rem; }
+        .output .command-result strong { color: var(--cyan); }
+        .output .command-result a {
+            color: var(--amber);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--amber);
+            transition: color 0.3s, background-color 0.3s;
+        }
+        .output .command-result a:hover {
+            color: var(--black);
+            background-color: var(--amber);
+        }
+        .output .command-result ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .output .command-result li::before {
+            content: '» ';
+            color: var(--pink);
+        }
+        .output .command-result .timeline-item {
+            display: flex;
+            margin-bottom: 0.5rem;
+        }
+        .output .command-result .timeline-date {
+            color: var(--green);
+            min-width: 120px;
+        }
+        .output .command-result .timeline-event {
+            color: var(--light-gray);
+        }
+        .output .command-result .separator {
+            color: var(--gray);
+            letter-spacing: 5px;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        /* ASCII Art Styling */
+        #ascii-art-container {
+            font-family: 'Courier New', monospace;
+            line-height: 0.7; /* Adjust to reduce vertical spacing */
+            font-size: 8px;   /* Smaller font for more detail */
+            white-space: pre;
+            margin: 1rem auto;
+            text-align: center;
+        }
+
+        /* Utility classes */
+        .hidden { display: none; }
+        .color-green { color: var(--green); }
+        .color-amber { color: var(--amber); }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body { font-size: 14px; }
+            #terminal {
+                border-radius: 0;
+                border: none;
+                height: 100%;
+            }
+            #content { padding: 1rem; }
+            .command-input { width: calc(100% - 130px); }
+            #ascii-art-container { font-size: 6px; }
+        }
+
+        @media (max-width: 480px) {
+            body { font-size: 12px; }
+            #content { padding: 0.5rem; }
+            .prompt {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .command-input { width: 100%; }
+             #ascii-art-container { font-size: 4px; line-height: 0.8;}
+        }
+
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div class="title-bar">
+            <div class="buttons">
+                <div class="button red"></div>
+                <div class="button yellow"></div>
+                <div class="button green"></div>
+            </div>
+            <div class="title">astro@sasi:~</div>
+        </div>
+        <div id="content">
+            <div id="output"></div>
+            <div class="line" id="input-line">
+                <span class="prompt">
+                    <span class="user">astro@sasi</span>:<span class="path">~</span>$
+                </span>
+                <input type="text" id="command-input" class="command-input" autocomplete="off" autofocus>
+                <span class="cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden image for ASCII conversion -->
+    <img id="ascii-source-image" src="https://sasimitra.in/wp-content/uploads/2024/02/Sasi-Drawing.png" class="hidden" alt="Source for ASCII art">
+    <canvas id="ascii-canvas" class="hidden"></canvas>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const output = document.getElementById('output');
+        const commandInput = document.getElementById('command-input');
+        const inputLine = document.getElementById('input-line');
+        const content = document.getElementById('content');
+
+        // --- State ---
+        const commandHistory = [];
+        let historyIndex = -1;
+
+        // --- ASCII Art Configuration ---
+        const ASCII_CHARS = ['@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.'];
+        const ASCII_DENSITY_MAP = "`.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31t[nuvjY2UFw54Zk9p#qm@W%&B$";
+        const ASCII_IMAGE_SRC = document.getElementById('ascii-source-image').src;
+        const ASCII_WIDTH = 100; // Characters wide
+
+        // --- Command Definitions ---
+        const commands = {
+            'help': {
+                description: 'Lists all available commands.',
+                action: () => {
+                    let helpText = 'Available commands:<br>';
+                    helpText += '<ul>';
+                    for (const cmd in commands) {
+                        helpText += `<li><strong>${cmd}</strong> - ${commands[cmd].description}</li>`;
+                    }
+                    helpText += '</ul>';
+                    return helpText;
+                }
+            },
+            'whoami': {
+                description: 'Displays a short bio.',
+                action: () => `
+                    <div class="command-result">
+                        <pre id="ascii-art-container">Generating portrait...</pre>
+                        <p>Hey, I'm Sasi - an astronomer, developer, and lifelong learner with a passion for the cosmos and code.</p>
+                        <p>I build tools to explore the universe, both real and virtual. This terminal is my digital habitat.</p>
+                        <p>Type <strong class="color-amber">'cat about.txt'</strong> for more details.</p>
+                    </div>
+                `,
+                postAction: () => generateAsciiArt(ASCII_IMAGE_SRC, ASCII_WIDTH),
+            },
+            'cat about.txt': {
+                description: 'Shows a more detailed biography.',
+                action: () => `
+                    <div class="command-result">
+                        <strong>// BIO.md</strong>
+                        <p>My journey started with a fascination for the night sky. That curiosity led me to a degree in Astrophysics, where I spent countless nights analyzing stellar spectra and extragalactic data. While my academic background is in science, my passion for technology drove me to software development.</p>
+                        <p>I specialize in Python for data analysis, JavaScript for web applications, and building scalable systems in the cloud. I believe the intersection of science and technology is where the most exciting discoveries are made. When I'm not at my keyboard, I'm probably out with my telescope or hiking a mountain trail.</p>
+                    </div>
+                `
+            },
+            'ls interests': {
+                description: 'Lists research and technical interests.',
+                action: () => `
+                    <div class="command-result">
+                        <strong>// RESEARCH_AND_TECH_INTERESTS</strong>
+                        <ul>
+                           <li>Stellar Astrophysics & Exoplanet Atmospheres</li>
+                           <li>Computational Cosmology Simulations</li>
+                           <li>Machine Learning for Astronomical Data Mining</li>
+                           <li>High-Performance Computing (HPC)</li>
+                           <li>Interactive Data Visualization (D3.js, Three.js)</li>
+                           <li>Building Scalable Cloud Infrastructure (AWS/GCP)</li>
+                        </ul>
+                        <div class="separator">...---...</div>
+                    </div>
+                `
+            },
+            'show timeline': {
+                description: 'Displays career and education timeline.',
+                action: () => `
+                    <div class="command-result">
+                        <strong>// CAREER_LOG.log</strong>
+                        <div class="timeline-item">
+                            <span class="timeline-date">2023 - Present</span>
+                            <span class="timeline-event">Lead Software Engineer @ Nebula Dynamics</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-date">2020 - 2023</span>
+                            <span class="timeline-event">Data Scientist @ Galactic Analytics Corp.</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-date">2018 - 2020</span>
+                            <span class="timeline-event">Research Assistant @ Institute of Planetary Science</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-date">2014 - 2018</span>
+                            <span class="timeline-event">B.Sc. in Astrophysics @ University of Stellar Studies</span>
+                        </div>
+                    </div>
+                `
+            },
+            'contact': {
+                description: 'Shows contact information and social links.',
+                action: () => `
+                    <div class="command-result">
+                        <strong>// Connect with me</strong>
+                        <ul>
+                            <li>Email: <a href="mailto:astro.sasi@example.com">astro.sasi@example.com</a></li>
+                            <li>GitHub: <a href="#" target="_blank">github.com/astrosasi</a></li>
+                            <li>LinkedIn: <a href="#" target="_blank">linkedin.com/in/astrosasi</a></li>
+                            <li>Twitter: <a href="#" target="_blank">@astrosasi_dev</a></li>
+                        </ul>
+                    </div>
+                `
+            },
+            'clear': {
+                description: 'Clears the terminal screen.',
+                action: () => {
+                    output.innerHTML = '';
+                    return ''; // No output message for clear
+                }
+            },
+            'date': {
+                description: 'Displays the current date and time.',
+                action: () => new Date().toString()
+            },
+            'sudo': {
+                description: 'Super user do.',
+                action: () => 'Permission denied. This incident will be reported.'
+            }
+        };
+
+        // --- Core Functions ---
+
+        /**
+         * Simulates typing text into the output.
+         * @param {string} text - The text to type out.
+         * @param {HTMLElement} element - The element to type into.
+         * @param {function} onComplete - Callback function when typing is finished.
+         */
+        function typeWriter(text, element, onComplete) {
+            let i = 0;
+            const speed = 10; // Typing speed in milliseconds
+
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    content.scrollTop = content.scrollHeight;
+                    setTimeout(type, speed);
+                } else if (onComplete) {
+                    onComplete();
+                }
+            }
+            type();
+        }
+
+        /**
+         * Displays a line of text in the output.
+         * @param {string} text - HTML content to display.
+         * @param {boolean} [isCommand=false] - If the line is a user-entered command.
+         */
+        function displayLine(text, isCommand = false) {
+            const line = document.createElement('div');
+            line.classList.add('line');
+            if (isCommand) {
+                line.innerHTML = `<span class="prompt"><span class="user">astro@sasi</span>:<span class="path">~</span>$</span> ${text}`;
+            } else {
+                line.innerHTML = text;
+            }
+            output.appendChild(line);
+            scrollToBottom();
+        }
+
+        /**
+         * Handles command execution.
+         * @param {string} commandStr - The command string entered by the user.
+         */
+        function executeCommand(commandStr) {
+            const command = commands[commandStr.toLowerCase().trim()];
+            if (command) {
+                const result = command.action();
+                if (result) {
+                    displayLine(result);
+                }
+                if (command.postAction) {
+                    command.postAction();
+                }
+            } else if (commandStr.trim() !== '') {
+                displayLine(`command not found: ${commandStr}. Type 'help' for a list of commands.`);
+            }
+        }
+
+        /**
+         * Scrolls the content area to the bottom.
+         */
+        function scrollToBottom() {
+             content.scrollTop = content.scrollHeight;
+        }
+
+        // --- ASCII Art Generation ---
+
+        /**
+         * Converts an image to colorful ASCII art.
+         * @param {string} imageUrl - The URL of the image to convert.
+         * @param {number} width - The desired width of the ASCII art in characters.
+         */
+        function generateAsciiArt(imageUrl, width = 100) {
+            const image = new Image();
+            image.crossOrigin = "Anonymous"; // Required for loading images from other domains
+            image.src = imageUrl;
+
+            const canvas = document.getElementById('ascii-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const asciiArtContainer = document.getElementById('ascii-art-container');
+
+            if (!asciiArtContainer) {
+                console.error("ASCII container not found in the DOM yet.");
+                return;
+            }
+
+            image.onload = () => {
+                const aspectRatio = image.height / image.width;
+                const height = Math.floor(width * aspectRatio * 0.5); // 0.5 factor for character aspect ratio
+
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(image, 0, 0, width, height);
+
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                let asciiString = '';
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const i = (y * width + x) * 4;
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        const a = data[i + 3];
+
+                        if (a === 0) { // If pixel is transparent
+                             asciiString += ' ';
+                             continue;
+                        }
+
+                        const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                        const charIndex = Math.floor(brightness * (ASCII_DENSITY_MAP.length - 1));
+                        const char = ASCII_DENSITY_MAP.charAt(charIndex);
+
+                        asciiString += `<span style="color: rgb(${r}, ${g}, ${b})">${char}</span>`;
+                    }
+                    asciiString += '\n';
+                }
+                asciiArtContainer.innerHTML = asciiString;
+                scrollToBottom();
+            };
+
+            image.onerror = () => {
+                asciiArtContainer.textContent = "Error: Could not load image for ASCII conversion.";
+                scrollToBottom();
+            }
+        }
+
+
+        // --- Event Listeners ---
+
+        // Focus input on any click in the terminal
+        document.getElementById('terminal').addEventListener('click', () => {
+            commandInput.focus();
+        });
+
+        // Handle command input
+        commandInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const commandStr = commandInput.value;
+                displayLine(commandStr, true);
+
+                if (commandStr.trim() !== '') {
+                    commandHistory.unshift(commandStr);
+                    historyIndex = -1;
+                }
+
+                executeCommand(commandStr);
+
+                commandInput.value = '';
+                scrollToBottom();
+            } else if (e.key === 'ArrowUp') {
+                if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    commandInput.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                 if (historyIndex > 0) {
+                    historyIndex--;
+                    commandInput.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = -1;
+                    commandInput.value = '';
+                }
+            }
+        });
+
+        // --- Initial Boot Sequence ---
+        function boot() {
+            const bootSequence = [
+                { text: 'Booting AstroKernel v2.4.1...', delay: 100 },
+                { text: 'Initializing star charts... OK', delay: 300 },
+                { text: 'Connecting to deep space network... <span class="color-green">CONNECTED</span>', delay: 500 },
+                { text: 'Calibrating gravitational sensors... DONE', delay: 200 },
+                { text: 'Welcome, Operator. System is ready.', delay: 100 },
+                { text: '<br>Type <strong class="color-amber">\'help\'</strong> to see the list of available commands.', delay: 100 }
+            ];
+
+            let delay = 0;
+            bootSequence.forEach(line => {
+                setTimeout(() => {
+                    displayLine(line.text);
+                }, delay);
+                delay += line.delay;
+            });
+
+            setTimeout(() => {
+                inputLine.style.opacity = 1;
+                commandInput.focus();
+            }, delay);
+        }
+
+        inputLine.style.opacity = 0; // Hide input until boot sequence is done
+        boot();
+    });
+    </script>
+</body>
+</html>
