@@ -42,7 +42,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image:
+            background-image: 
                 radial-gradient(1px 1px at 20% 30%, var(--light-gray), transparent),
                 radial-gradient(1px 1px at 80% 10%, var(--light-gray), transparent),
                 radial-gradient(1px 1px at 50% 50%, var(--light-gray), transparent),
@@ -114,25 +114,12 @@
             user-select: none;
         }
 
-        .title-bar .buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .title-bar .button {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
+        .title-bar .buttons { display: flex; gap: 8px; }
+        .title-bar .button { width: 12px; height: 12px; border-radius: 50%; }
         .button.red { background-color: #ff5f56; }
         .button.yellow { background-color: #ffbd2e; }
         .button.green { background-color: #27c93f; }
-
-        .title-bar .title {
-            color: var(--light-gray);
-            margin: 0 auto;
-            font-weight: 500;
-        }
+        .title-bar .title { color: var(--light-gray); margin: 0 auto; font-weight: 500; }
 
         /* Terminal Content Area */
         #content {
@@ -142,108 +129,64 @@
             overflow-x: hidden;
             word-wrap: break-word;
         }
-
-        /* Custom scrollbar */
-        #content::-webkit-scrollbar {
-          width: 8px;
-        }
-
-        #content::-webkit-scrollbar-track {
-          background: var(--dark-gray);
-        }
-
-        #content::-webkit-scrollbar-thumb {
-          background-color: var(--gray);
-          border-radius: 4px;
-          border: 2px solid var(--dark-gray);
-        }
+        
+        #content::-webkit-scrollbar { width: 8px; }
+        #content::-webkit-scrollbar-track { background: var(--dark-gray); }
+        #content::-webkit-scrollbar-thumb { background-color: var(--gray); border-radius: 4px; border: 2px solid var(--dark-gray); }
 
         /* Command Line and Input */
-        .line {
-            line-height: 1.6;
-        }
-
-        .prompt {
-            color: var(--cyan);
-            user-select: none;
-        }
+        .line { line-height: 1.6; }
+        .prompt { color: var(--cyan); user-select: none; }
         .prompt .user { color: var(--green); }
         .prompt .path { color: var(--purple); }
-
+        
         .command-input {
-            background-color: transparent;
-            border: none;
-            color: var(--light-gray);
-            font-family: var(--font-family);
-            font-size: 1em;
-            width: calc(100% - 150px); /* Adjust based on prompt length */
+            background-color: transparent; border: none; color: var(--light-gray);
+            font-family: var(--font-family); font-size: 1em; width: calc(100% - 150px);
         }
-        .command-input:focus {
-            outline: none;
-        }
+        .command-input:focus { outline: none; }
 
         /* Blinking Cursor */
         .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.2em;
-            background-color: var(--light-gray);
-            animation: blink 1s steps(1) infinite;
-            vertical-align: middle;
-            margin-left: 5px;
+            display: inline-block; width: 10px; height: 1.2em;
+            background-color: var(--light-gray); animation: blink 1s steps(1) infinite;
+            vertical-align: middle; margin-left: 5px;
         }
-
-        @keyframes blink {
-          50% { background-color: transparent; }
-        }
+        @keyframes blink { 50% { background-color: transparent; } }
 
         /* Output Formatting */
         .output .command-result { margin-bottom: 1rem; }
         .output .command-result strong { color: var(--cyan); }
-        .output .command-result a {
-            color: var(--amber);
-            text-decoration: none;
-            border-bottom: 1px dashed var(--amber);
-            transition: color 0.3s, background-color 0.3s;
+        .output .command-result a { 
+            color: var(--amber); text-decoration: none;
+            border-bottom: 1px dashed var(--amber); transition: color 0.3s, background-color 0.3s;
         }
-        .output .command-result a:hover {
-            color: var(--black);
-            background-color: var(--amber);
-        }
-        .output .command-result ul {
-            list-style: none;
-            padding-left: 0;
-        }
-        .output .command-result li::before {
-            content: '» ';
-            color: var(--pink);
-        }
-        .output .command-result .timeline-item {
+        .output .command-result a:hover { color: var(--black); background-color: var(--amber); }
+        .output .command-result ul { list-style: none; padding-left: 0; }
+        .output .command-result li::before { content: '» '; color: var(--pink); }
+        .output .command-result .timeline-item { display: flex; margin-bottom: 0.5rem; }
+        .output .command-result .timeline-date { color: var(--green); min-width: 120px; }
+        .output .command-result .timeline-event { color: var(--light-gray); }
+        .output .command-result .separator { color: var(--gray); letter-spacing: 5px; text-align: center; margin: 1rem 0; }
+
+        /* whoami command specific layout */
+        .whoami-container {
             display: flex;
-            margin-bottom: 0.5rem;
+            gap: 2rem;
+            align-items: center;
         }
-        .output .command-result .timeline-date {
-            color: var(--green);
-            min-width: 120px;
+        .ascii-column {
+            flex: 0 0 45%; /* Don't grow, don't shrink, base size 45% */
         }
-        .output .command-result .timeline-event {
-            color: var(--light-gray);
-        }
-        .output .command-result .separator {
-            color: var(--gray);
-            letter-spacing: 5px;
-            text-align: center;
-            margin: 1rem 0;
+        .text-column {
+            flex: 1; /* Grow to fill remaining space */
         }
 
         /* ASCII Art Styling */
         #ascii-art-container {
             font-family: 'Courier New', monospace;
-            line-height: 0.7; /* Adjust to reduce vertical spacing */
-            font-size: 8px;   /* Smaller font for more detail */
-            white-space: pre;
-            margin: 1rem auto;
-            text-align: center;
+            line-height: 0.7; font-size: 8px;
+            white-space: pre; text-align: center;
         }
 
         /* Utility classes */
@@ -254,25 +197,19 @@
         /* Responsive Design */
         @media (max-width: 768px) {
             body { font-size: 14px; }
-            #terminal {
-                border-radius: 0;
-                border: none;
-                height: 100%;
-            }
+            #terminal { border-radius: 0; border: none; height: 100%; }
             #content { padding: 1rem; }
             .command-input { width: calc(100% - 130px); }
             #ascii-art-container { font-size: 6px; }
+            .whoami-container { flex-direction: column; } /* Stack columns on smaller screens */
         }
 
         @media (max-width: 480px) {
             body { font-size: 12px; }
             #content { padding: 0.5rem; }
-            .prompt {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+            .prompt { flex-direction: column; align-items: flex-start; }
             .command-input { width: 100%; }
-             #ascii-art-container { font-size: 4px; line-height: 0.8;}
+            #ascii-art-container { font-size: 4px; line-height: 0.8; }
         }
 
     </style>
@@ -300,7 +237,7 @@
     </div>
 
     <!-- Hidden image for ASCII conversion -->
-    <img id="ascii-source-image" src="https://sasimitra.in/wp-content/uploads/2024/02/Sasi-Drawing.png" class="hidden" alt="Source for ASCII art">
+    <img id="ascii-source-image" src="https://raw.githubusercontent.com/SasiMitraB/personal-website/refs/heads/main/sasi_drawing.png" class="hidden" alt="Source for ASCII art">
     <canvas id="ascii-canvas" class="hidden"></canvas>
 
 
@@ -311,13 +248,12 @@
         const commandInput = document.getElementById('command-input');
         const inputLine = document.getElementById('input-line');
         const content = document.getElementById('content');
-
+        
         // --- State ---
         const commandHistory = [];
         let historyIndex = -1;
 
         // --- ASCII Art Configuration ---
-        const ASCII_CHARS = ['@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.'];
         const ASCII_DENSITY_MAP = "`.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31t[nuvjY2UFw54Zk9p#qm@W%&B$";
         const ASCII_IMAGE_SRC = document.getElementById('ascii-source-image').src;
         const ASCII_WIDTH = 100; // Characters wide
@@ -339,11 +275,15 @@
             'whoami': {
                 description: 'Displays a short bio.',
                 action: () => `
-                    <div class="command-result">
-                        <pre id="ascii-art-container">Generating portrait...</pre>
-                        <p>Hey, I'm Sasi - an astronomer, developer, and lifelong learner with a passion for the cosmos and code.</p>
-                        <p>I build tools to explore the universe, both real and virtual. This terminal is my digital habitat.</p>
-                        <p>Type <strong class="color-amber">'cat about.txt'</strong> for more details.</p>
+                    <div class="command-result whoami-container">
+                        <div class="ascii-column">
+                            <pre id="ascii-art-container">Generating portrait...</pre>
+                        </div>
+                        <div class="text-column">
+                            <p>Hey, I'm Sasi - an astronomer, coder, and lifelong learner with a passion for the cosmos and code.</p>
+                            <p>I build tools to explore the universe, both real and virtual. This terminal is my digital habitat.</p>
+                            <p>Type <strong class="color-amber">'cat about.txt'</strong> for more details.</p>
+                        </div>
                     </div>
                 `,
                 postAction: () => generateAsciiArt(ASCII_IMAGE_SRC, ASCII_WIDTH),
@@ -353,8 +293,8 @@
                 action: () => `
                     <div class="command-result">
                         <strong>// BIO.md</strong>
-                        <p>My journey started with a fascination for the night sky. That curiosity led me to a degree in Astrophysics, where I spent countless nights analyzing stellar spectra and extragalactic data. While my academic background is in science, my passion for technology drove me to software development.</p>
-                        <p>I specialize in Python for data analysis, JavaScript for web applications, and building scalable systems in the cloud. I believe the intersection of science and technology is where the most exciting discoveries are made. When I'm not at my keyboard, I'm probably out with my telescope or hiking a mountain trail.</p>
+                        <p>My journey started with a fascination for the night sky. That curiosity led me to a degree in Astrophysics, where I spent countless nights analyzing stellar spectra and extragalactic data. While my academic background is in science, my passion for technology drove me to pursue computational astrophysics.</p>
+                        <p>I specialize in Python for data analysis, JavaScript for web applications. I believe the intersection of science and technology is where the most exciting discoveries are made. When I'm not at my keyboard, I'm probably sleeping.</p>
                     </div>
                 `
             },
@@ -364,12 +304,10 @@
                     <div class="command-result">
                         <strong>// RESEARCH_AND_TECH_INTERESTS</strong>
                         <ul>
-                           <li>Stellar Astrophysics & Exoplanet Atmospheres</li>
-                           <li>Computational Cosmology Simulations</li>
+                           <li>Interstellar Medium of Galaxies</li>
+                           <li>Computational Fluid Simulations for Astrophysics</li>
                            <li>Machine Learning for Astronomical Data Mining</li>
                            <li>High-Performance Computing (HPC)</li>
-                           <li>Interactive Data Visualization (D3.js, Three.js)</li>
-                           <li>Building Scalable Cloud Infrastructure (AWS/GCP)</li>
                         </ul>
                         <div class="separator">...---...</div>
                     </div>
@@ -380,6 +318,7 @@
                 action: () => `
                     <div class="command-result">
                         <strong>// CAREER_LOG.log</strong>
+                        <strong> THIS IS JUST A PLACEHOLDER TEXT. </strong>
                         <div class="timeline-item">
                             <span class="timeline-date">2023 - Present</span>
                             <span class="timeline-event">Lead Software Engineer @ Nebula Dynamics</span>
@@ -405,10 +344,9 @@
                     <div class="command-result">
                         <strong>// Connect with me</strong>
                         <ul>
-                            <li>Email: <a href="mailto:astro.sasi@example.com">astro.sasi@example.com</a></li>
-                            <li>GitHub: <a href="#" target="_blank">github.com/astrosasi</a></li>
-                            <li>LinkedIn: <a href="#" target="_blank">linkedin.com/in/astrosasi</a></li>
-                            <li>Twitter: <a href="#" target="_blank">@astrosasi_dev</a></li>
+                            <li>Email: <a href="mailto:beharasasimitra211141@students.iisertirupati.ac.in">beharasasimitra211141@students.iisertirupati.ac.in</a></li>
+                            <li>GitHub: <a href="https://github.com/SasiMitraB" target="_blank">https://github.com/SasiMitraB</a></li>
+                           
                         </ul>
                     </div>
                 `
@@ -431,30 +369,7 @@
         };
 
         // --- Core Functions ---
-
-        /**
-         * Simulates typing text into the output.
-         * @param {string} text - The text to type out.
-         * @param {HTMLElement} element - The element to type into.
-         * @param {function} onComplete - Callback function when typing is finished.
-         */
-        function typeWriter(text, element, onComplete) {
-            let i = 0;
-            const speed = 10; // Typing speed in milliseconds
-
-            function type() {
-                if (i < text.length) {
-                    element.innerHTML += text.charAt(i);
-                    i++;
-                    content.scrollTop = content.scrollHeight;
-                    setTimeout(type, speed);
-                } else if (onComplete) {
-                    onComplete();
-                }
-            }
-            type();
-        }
-
+        
         /**
          * Displays a line of text in the output.
          * @param {string} text - HTML content to display.
@@ -490,7 +405,7 @@
                 displayLine(`command not found: ${commandStr}. Type 'help' for a list of commands.`);
             }
         }
-
+        
         /**
          * Scrolls the content area to the bottom.
          */
@@ -509,7 +424,7 @@
             const image = new Image();
             image.crossOrigin = "Anonymous"; // Required for loading images from other domains
             image.src = imageUrl;
-
+            
             const canvas = document.getElementById('ascii-canvas');
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             const asciiArtContainer = document.getElementById('ascii-art-container');
@@ -521,12 +436,13 @@
 
             image.onload = () => {
                 const aspectRatio = image.height / image.width;
-                const height = Math.floor(width * aspectRatio * 0.5); // 0.5 factor for character aspect ratio
-
+                // Correct for character aspect ratio (characters are taller than they are wide)
+                const height = Math.floor(width * aspectRatio * 0.48); 
+                
                 canvas.width = width;
                 canvas.height = height;
                 ctx.drawImage(image, 0, 0, width, height);
-
+                
                 const imageData = ctx.getImageData(0, 0, width, height);
                 const data = imageData.data;
                 let asciiString = '';
@@ -534,10 +450,7 @@
                 for (let y = 0; y < height; y++) {
                     for (let x = 0; x < width; x++) {
                         const i = (y * width + x) * 4;
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
-                        const a = data[i + 3];
+                        const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
 
                         if (a === 0) { // If pixel is transparent
                              asciiString += ' ';
@@ -547,7 +460,7 @@
                         const brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
                         const charIndex = Math.floor(brightness * (ASCII_DENSITY_MAP.length - 1));
                         const char = ASCII_DENSITY_MAP.charAt(charIndex);
-
+                        
                         asciiString += `<span style="color: rgb(${r}, ${g}, ${b})">${char}</span>`;
                     }
                     asciiString += '\n';
@@ -562,27 +475,22 @@
             }
         }
 
-
         // --- Event Listeners ---
 
-        // Focus input on any click in the terminal
-        document.getElementById('terminal').addEventListener('click', () => {
-            commandInput.focus();
-        });
-
-        // Handle command input
+        document.getElementById('terminal').addEventListener('click', () => commandInput.focus());
+        
         commandInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const commandStr = commandInput.value;
                 displayLine(commandStr, true);
-
+                
                 if (commandStr.trim() !== '') {
                     commandHistory.unshift(commandStr);
                     historyIndex = -1;
                 }
-
+                
                 executeCommand(commandStr);
-
+                
                 commandInput.value = '';
                 scrollToBottom();
             } else if (e.key === 'ArrowUp') {
@@ -600,7 +508,7 @@
                 }
             }
         });
-
+        
         // --- Initial Boot Sequence ---
         function boot() {
             const bootSequence = [
@@ -611,22 +519,20 @@
                 { text: 'Welcome, Operator. System is ready.', delay: 100 },
                 { text: '<br>Type <strong class="color-amber">\'help\'</strong> to see the list of available commands.', delay: 100 }
             ];
-
+            
             let delay = 0;
             bootSequence.forEach(line => {
-                setTimeout(() => {
-                    displayLine(line.text);
-                }, delay);
+                setTimeout(() => { displayLine(line.text); }, delay);
                 delay += line.delay;
             });
-
+            
             setTimeout(() => {
                 inputLine.style.opacity = 1;
                 commandInput.focus();
             }, delay);
         }
 
-        inputLine.style.opacity = 0; // Hide input until boot sequence is done
+        inputLine.style.opacity = 0;
         boot();
     });
     </script>
