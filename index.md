@@ -14,7 +14,7 @@ layout: base.njk
         </p>
     </div>
     <div class="about-image">
-        <img src="img/sasi_drawing.png" alt="Sasi Mitra profile picture">
+        <img src="{{ '/img/sasi_drawing.png' | url }}" alt="Sasi Mitra profile picture">
         {# Remember to replace this with a real image! #}
     </div>
 </section>

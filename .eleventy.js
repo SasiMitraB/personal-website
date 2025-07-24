@@ -8,6 +8,9 @@ module.exports = function(eleventyConfig) {
 
   return {
     // When a passthrough file is modified, rebuild the site.
-    passthroughFileCopy: true
+    passthroughFileCopy: true,
+    
+    // Set the path prefix for GitHub Pages
+    pathPrefix: "/personal-website/"
   };
 };
