@@ -1,0 +1,184 @@
+/* Filename: css/style.css */
+
+ /* Basic Reset & Fonts */
+ body {
+     font-family: 'Courier New', monospace;
+     line-height: 1.5;
+     background-color: #1e1e1e; /* Dark background */
+     color: #00ff00; /* Green text - classic hacker look */
+     margin: 0;
+     padding: 20px;
+ }
+
+ h1, h2 {
+     font-family: 'VT323', monospace; /* Retro computer font */
+     color: #00ff00;
+     font-weight: normal; /* Less bold for a terminal feel */
+     text-shadow: 0 0 5px #00ff00; /* Neon glow */
+ }
+
+ a {
+     color: #00cc00; /* Slightly darker green for links */
+     text-decoration: none;
+ }
+
+ a:hover {
+     text-decoration: underline;
+     color: #00ff00; /* Brighter on hover */
+ }
+
+ /* Structure */
+ .wrapper {
+  
+     margin: 0 auto;
+     padding: 2rem;
+
+     border: 1px solid #333; /* Add a subtle border */
+ }
+
+ /* Header */
+ .site-header {
+     text-align: center;
+     border-bottom: 1px dashed #00ff00; /* Dashed line for a tech feel */
+     padding-bottom: 1rem;
+     margin-bottom: 2rem;
+ }
+
+ .site-header h1 {
+     margin: 0;
+     font-size: 2.5rem;
+ }
+
+ .site-header .tagline {
+     margin: 0;
+     font-size: 1.1rem;
+     color: #99ff99; /* Lighter green for the tagline */
+ }
+
+ /* Navigation */
+ .main-nav ul {
+     list-style: none;
+     padding: 0;
+     margin: 0;
+     display: flex;
+     justify-content: center;
+     gap: 1.5rem;
+     margin-bottom: 2rem;
+ }
+
+ .main-nav a {
+     padding: 0.5rem 1rem;
+     border: 1px solid #333;
+     border-radius: 5px;
+ }
+
+ .main-nav a:hover {
+     border-color: #00ff00;
+ }
+
+ /* Main Content Sections */
+ .about-me {
+     display: flex;
+     align-items: center;
+     gap: 2rem;
+     margin-bottom: 3rem;
+     color: #eee; /* Slightly off-white for better readability on dark */
+ }
+
+ .about-image img {
+     max-width: 200px;
+     border-radius: 5px;
+     border: 2px solid #00ff00; /* Neon border for the image */
+     box-shadow: 0 0 5px #00ff00;
+ }
+
+ .social-links {
+     text-align: center;
+     margin-top: 1rem;
+ }
+
+ .social-links a {
+     color: #00cc00;
+     padding: 0.3rem 0.5rem;
+     border: 1px solid #333;
+     border-radius: 3px;
+ }
+
+ .social-links a:hover {
+     border-color: #00ff00;
+ }
+
+ /* Footer */
+ .site-footer {
+     text-align: center;
+     margin-top: 3rem;
+     padding-top: 1.5rem;
+     border-top: 1px dashed #00ff00;
+     font-size: 0.9rem;
+     color: #777;
+ }
+
+ /* Responsive layout for smaller screens */
+ @media (max-width: 768px) {
+     .about-me {
+         flex-direction: column;
+         text-align: center;
+     }
+     .about-image {
+         order: -1; /* Puts the image on top */
+         margin-bottom: 1rem;
+     }
+     .main-nav ul {
+         flex-wrap: wrap;
+         gap: 1rem;
+     }
+ }
+
+ /* File: css/style.css (add to the bottom) */
+
+
+/* --- Dropdown Menu Styles --- */
+
+/* The container for the dropdown li element */
+.dropdown {
+    position: relative; /* This is crucial for positioning the dropdown content */
+}
+
+/* The dropdown menu ul itself. Hidden by default. */
+.dropdown-content {
+    display: none !important; /* Force it to be hidden initially */
+    position: absolute; /* Positions it relative to the .dropdown container */
+    top: 100%; /* Position it right below the dropdown button */
+    left: 0; /* Align with the left edge of the dropdown container */
+    background-color: #282828;
+    min-width: 160px;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    z-index: 1000; /* Higher z-index to ensure it appears on top */
+    padding: 0;
+    list-style: none;
+    margin: 0; /* Remove any default margin */
+}
+
+/* This is the magic rule: When you hover over the .dropdown container,
+   it changes the display of its child, .dropdown-content, to block. */
+.dropdown:hover .dropdown-content {
+    display: block !important; /* Force it to show on hover */
+}
+
+/* Links inside the dropdown */
+.dropdown-content li a {
+    color: #00ff00;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+    border: none;
+    border-radius: 0;
+}
+
+
+/* Change color of dropdown links on hover */
+.dropdown-content li a:hover {
+    background-color: #333;
+}

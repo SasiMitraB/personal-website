@@ -1,0 +1,19 @@
+{# File: _includes/app_layout.njk #}
+{% extends "base.njk" %}
+
+{# This block adds the app-specific CSS and styles to the head #}
+{% block head %}
+    {{ super() }} {# This includes everything from the parent base.njk head #}
+   
+{% endblock %}
+
+{# This block replaces the main content of the page #}
+{% block content %}
+    {{ content | safe }}
+{% endblock %}
+
+
+{# This block adds the app-specific JS to the end of the body #}
+{% block scripts %}
+   
+{% endblock %}

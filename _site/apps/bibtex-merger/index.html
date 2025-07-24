@@ -1,0 +1,518 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BibTeX Merge Machine</title> 
+
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+     
+   
+
+</head>
+<body>
+    <div class="wrapper">
+        <header class="site-header">
+            <h1>Sasi Mitra</h1>
+            <p class="tagline">Astrophysics | Code | Art</p>
+        </header>
+
+        <nav class="main-nav">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/research/">Research</a></li>
+                <li><a href="/blog/">Blog</a></li>
+                
+                <li class="dropdown"> <a href="#" class="drop-btn">Funky Web Apps ▼</a>
+                    <ul class="dropdown-content"> <li><a href="/apps/bibtex-merger">BibTeX Merge Machine</a></li>
+                    </ul>
+                </li>
+                <li><a href="/cv/">CV</a></li>
+                <li><a href="/contact/">Contact</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            
+            
+     <style>
+        /* App-specific styles using site's color scheme */
+        .app-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .app-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .app-header h1 {
+            font-family: 'VT323', monospace;
+            color: #00ff00;
+            font-size: 2.5rem;
+            margin: 0 0 1rem 0;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        
+        .app-header p {
+            color: #00ff00;
+            margin: 0.5rem 0;
+        }
+        
+        .kelsa-mane {
+            background-color: #282828;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .step-section {
+            margin-bottom: 2rem;
+        }
+        
+        .step-section h2 {
+            font-family: 'VT323', monospace;
+            color: #00ff00;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .step-section code {
+            background-color: #333;
+            color: #00ff00;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            border: 1px solid #00ff00;
+        }
+        
+        .step-description {
+            color: #99ff99;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .file-jaaga {
+            border: 2px dashed #00ff00;
+            border-radius: 5px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .file-jaaga:hover {
+            background-color: #333;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        
+        .file-jaaga.dragover {
+            background-color: #333;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+        
+        .upload-icon {
+            width: 3rem;
+            height: 3rem;
+            color: #666;
+            margin: 0 auto 1rem auto;
+        }
+        
+        .file-jaaga p {
+            color: #00cc00;
+            margin: 0.5rem 0;
+        }
+        
+        .highlight {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        
+        .file-note {
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .file-patti {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            background-color: #333;
+            border: 1px solid #00ff00;
+            border-radius: 3px;
+            margin-top: 0.5rem;
+            color: #00cc00;
+        }
+        
+        .action-section {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .chalu-maadu-btn {
+            background-color: #00ff00;
+            color: #1e1e1e;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chalu-maadu-btn:hover:not(:disabled) {
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .chalu-maadu-btn:disabled {
+            background-color: #666;
+            color: #333;
+            cursor: not-allowed;
+        }
+        
+        .results-section {
+            margin-top: 2rem;
+        }
+        
+        .status-message {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+        
+        .togo-maga-btn {
+            display: inline-block;
+            background-color: transparent;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 0.75rem 2rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .togo-maga-btn:hover {
+            background-color: #00ff00;
+            color: #1e1e1e;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .app-footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px dashed #00ff00;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Status message types */
+        .status-error {
+            border-color: #ff6b6b;
+            background-color: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+        
+        .status-success {
+            border-color: #00ff00;
+            background-color: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+        }
+        
+        .status-warning {
+            border-color: #ffeb3b;
+            background-color: rgba(255, 235, 59, 0.1);
+            color: #ffeb3b;
+        }
+        
+        .status-info {
+            border-color: #00cc00;
+            background-color: rgba(0, 204, 0, 0.1);
+            color: #00cc00;
+        }
+    </style>
+    
+<div class="app-container">
+    <header class="app-header">
+        <h1>BibTeX Merge Machine</h1>
+        <p>> execute: citation_cleanup_protocol</p>
+        <p>Suppose you've got multiple .bib files in your LaTeX project, and you're looking to generate a single bib file with all the stuff that you've generated, here's the web app for you.</p>
+    </header>
+
+    <main class="kelsa-mane">
+        <!-- Step 1: AUX File -->
+        <div class="step-section">
+            <h2>Step 1: First, <code>.aux</code> file gib</h2>
+            <p class="step-description">> This tells what all you cited. In Overleaf click that document button next to file download, and there you'll see "Other logs and files". From there aux file you download off</p>
+            <div id="aux-file-jaaga" class="file-jaaga">
+                <input type="file" id="aux-file-beku" class="hidden" accept=".aux">
+                <div id="aux-placeholder-guru">
+                    <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <p>Drag & drop or <span class="highlight">select file</span></p>
+                    <p class="file-note">.AUX FILE ONLY, BOSS</p>
+                </div>
+                <div id="aux-file-display-maadu" class="hidden"></div>
+            </div>
+        </div>
+
+        <!-- Step 2: BIB Files -->
+        <div class="step-section">
+            <h2>Step 2: Now, all <code>.bib</code> files haaki</h2>
+            <p class="step-description">> All your reference files, one shot you can upload.</p>
+            <div id="bib-files-jaaga" class="file-jaaga">
+                <input type="file" id="bib-files-kodi" class="hidden" accept=".bib" multiple>
+                <div id="bib-placeholder-guru">
+                    <svg class="upload-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <p>Drag & drop or <span class="highlight">select files</span></p>
+                    <p class="file-note">MULTIPLE .BIB FILES OK, CHILL</p>
+                </div>
+                <div id="bib-files-display-maadu" class="hidden"></div>
+            </div>
+        </div>
+
+        <!-- Step 3: Generate -->
+        <div class="action-section">
+            <button id="kelsa-maadu-btn" class="chalu-maadu-btn">
+                Chalu Maadu!
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="result-anthu-bandide" class="results-section hidden">
+             <div id="en-samachara" class="status-message"></div>
+             <a id="togo-maga-download-btn" class="togo-maga-btn hidden">
+                Togo, Maga! (Download)
+            </a>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>All processing is done on your own browser, no files are uploaded. Right click and view page source for the javascript implementation.</p>
+    </footer>
+</div>
+
+ <script>
+        const auxFileJaaga = document.getElementById('aux-file-jaaga');
+        const auxFileBeku = document.getElementById('aux-file-beku');
+        const auxPlaceholderGuru = document.getElementById('aux-placeholder-guru');
+        const auxFileDisplayMaadu = document.getElementById('aux-file-display-maadu');
+
+        const bibFilesJaaga = document.getElementById('bib-files-jaaga');
+        const bibFilesKodi = document.getElementById('bib-files-kodi');
+        const bibPlaceholderGuru = document.getElementById('bib-placeholder-guru');
+        const bibFilesDisplayMaadu = document.getElementById('bib-files-display-maadu');
+
+        const kelsaMaaduBtn = document.getElementById('kelsa-maadu-btn');
+        const resultAnthuBandide = document.getElementById('result-anthu-bandide');
+        const enSamachara = document.getElementById('en-samachara');
+        const togoMagaBtn = document.getElementById('togo-maga-download-btn');
+
+        let auxFileContent = null;
+        let bibFilesContent = [];
+
+        // Function to read file, simple and sweet
+        function fileOdhappa(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+
+        // Show the uploaded file names
+        function displayAuxFile() {
+            auxPlaceholderGuru.classList.add('hidden');
+            auxFileDisplayMaadu.classList.remove('hidden');
+            auxFileDisplayMaadu.innerHTML = `<div class="file-patti"><span>${auxFileContent.name}</span><span class="text-sm">${(auxFileContent.size / 1024).toFixed(2)} KB</span></div>`;
+        }
+
+        function displayBibFiles() {
+            if (bibFilesContent.length > 0) {
+                bibPlaceholderGuru.classList.add('hidden');
+                bibFilesDisplayMaadu.classList.remove('hidden');
+                bibFilesDisplayMaadu.innerHTML = bibFilesContent.map(file =>
+                    `<div class="file-patti"><span>${file.name}</span><span class="text-sm">${(file.size / 1024).toFixed(2)} KB</span></div>`
+                ).join('');
+            } else {
+                bibPlaceholderGuru.classList.remove('hidden');
+                bibFilesDisplayMaadu.classList.add('hidden');
+            }
+        }
+
+        // Setup the drag-drop area, proper jugaad
+        function setupDropJaaga(jaaga, input, isMultiple, fileHandler) {
+            jaaga.addEventListener('click', () => input.click());
+            jaaga.addEventListener('dragover', (e) => { e.preventDefault(); jaaga.classList.add('dragover'); });
+            jaaga.addEventListener('dragleave', () => { jaaga.classList.remove('dragover'); });
+            jaaga.addEventListener('drop', (e) => {
+                e.preventDefault();
+                jaaga.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+            input.addEventListener('change', (e) => {
+                if (isMultiple) fileHandler([...e.target.files]);
+                else fileHandler(e.target.files[0]);
+            });
+        }
+
+        setupDropJaaga(auxFileJaaga, auxFileBeku, false, (file) => {
+            if (file) { auxFileContent = file; displayAuxFile(); }
+        });
+
+        setupDropJaaga(bibFilesJaaga, bibFilesKodi, true, (files) => {
+            if (files && files.length > 0) { bibFilesContent = files; displayBibFiles(); }
+        });
+
+        // The main logic, where all the magic happens
+        function parseAuxMaga(content) {
+            const citationRegex = /\\citation\{([^}]+)\}/g;
+            const citedKeys = new Set();
+            let match;
+            while ((match = citationRegex.exec(content)) !== null) {
+                match[1].split(',').forEach(key => { if (key.trim()) citedKeys.add(key.trim()); });
+            }
+            return citedKeys;
+        }
+
+        function parseBibMaga(content) {
+            const entries = new Map();
+            const entryRegex = /@\w+\s*\{([^,]+),/g;
+            let match;
+            while((match = entryRegex.exec(content)) !== null) {
+                const key = match[1].trim();
+                const startIndex = match.index;
+                let braceCount = 0;
+                let currentIndex = content.indexOf('{', startIndex) + 1;
+                for (let i = currentIndex; i < content.length; i++) {
+                    if (content[i] === '{') braceCount++;
+                    else if (content[i] === '}') {
+                        if (braceCount === 0) {
+                            entries.set(key, content.substring(startIndex, i + 1));
+                            break;
+                        }
+                        braceCount--;
+                    }
+                }
+            }
+            return entries;
+        }
+
+        // This is where we start the work when button is clicked
+        async function chaluMaaduKelsa() {
+            if (!auxFileContent) { showSamachara("Ayyayyo! First AUX file give bro.", 'error'); return; }
+            if (bibFilesContent.length === 0) { showSamachara("Dei. where is the bib file da?.", 'error'); return; }
+
+            kelsaMaaduBtn.disabled = true;
+            kelsaMaaduBtn.textContent = 'Oota Aitha?...';
+            showSamachara("Files reading madtha idini...", 'info');
+
+            try {
+                const auxText = await fileOdhappa(auxFileContent);
+                const citedKeys = parseAuxMaga(auxText);
+                showSamachara(`Sakkath! ${citedKeys.size} citations found. Now checking BIB files...`, 'info');
+
+                if (citedKeys.size === 0) {
+                    showSamachara("Nothing inside AUX file macha. Master file will be empty, guru.", 'warning');
+                    kelsaMaaduBtn.disabled = false;
+                    kelsaMaaduBtn.textContent = 'Chalu Maadu!';
+                    return;
+                }
+
+                const allBibEntries = new Map();
+                for (const file of bibFilesContent) {
+                    const bibText = await fileOdhappa(file);
+                    const entries = parseBibMaga(bibText);
+                    for (const [key, value] of entries) {
+                        if (!allBibEntries.has(key)) allBibEntries.set(key, value);
+                    }
+                }
+                showSamachara(`Total ${allBibEntries.size} entries parsed. Master file getting ready...`, 'info');
+
+                const masterBibParts = [];
+                const missingKeys = new Set();
+                for (const key of citedKeys) {
+                    if (allBibEntries.has(key)) masterBibParts.push(allBibEntries.get(key));
+                    else missingKeys.add(key);
+                }
+
+                const masterBibContent = masterBibParts.join('\n\n');
+                let successMessage = `Chindi! Master file ready with ${masterBibParts.length} entries.`;
+                if (missingKeys.size > 0) {
+                    showSamachara(`${successMessage}<br><br><strong>Warning:</strong> These ${missingKeys.size} keys missing, boss: <br><code class="text-xs">${[...missingKeys].join(', ')}</code>`, 'warning');
+                } else {
+                    showSamachara(successMessage, 'success');
+                }
+
+                prepareTogoMaga(masterBibContent);
+
+            } catch (error) {
+                console.error("Enappa error bantu:", error);
+                showSamachara(`Ayyayyo, something went wrong: ${error.message}.`, 'error');
+            } finally {
+                kelsaMaaduBtn.disabled = false;
+                kelsaMaaduBtn.textContent = 'Chalu Maadu!';
+            }
+        }
+
+        // Show status message to user
+        function showSamachara(message, type = 'info') {
+            resultAnthuBandide.classList.remove('hidden');
+            enSamachara.innerHTML = message;
+            enSamachara.className = 'status-message';
+            enSamachara.classList.add(`status-${type}`);
+        }
+
+        // Get the download button ready
+        function prepareTogoMaga(content) {
+            const blob = new Blob([content], { type: 'application/x-bibtex;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            togoMagaBtn.href = url;
+            togoMagaBtn.download = 'master_references.bib';
+            togoMagaBtn.classList.remove('hidden');
+        }
+
+        kelsaMaaduBtn.addEventListener('click', chaluMaaduKelsa);
+    </script>
+
+        </main>
+
+        <footer class="site-footer">
+            <p>&copy; <span id="year"></span> Sasi Mitra.</p>
+        </footer>
+    </div>
+
+    
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    
+   
+
+</body>
+</html>

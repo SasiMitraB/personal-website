@@ -1,0 +1,83 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sasi Mitra - Astrophysics | Code | Art</title> 
+
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+    
+    <link rel="stylesheet" href="/css/style.css">
+    
+</head>
+<body>
+    <div class="wrapper">
+        <header class="site-header">
+            <h1>Sasi Mitra</h1>
+            <p class="tagline">Astrophysics | Code | Art</p>
+        </header>
+
+        <nav class="main-nav">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/research/">Research</a></li>
+                <li><a href="/blog/">Blog</a></li>
+                
+                <li class="dropdown"> <a href="#" class="drop-btn">Funky Web Apps ▼</a>
+                    <ul class="dropdown-content"> <li><a href="/apps/bibtex-merger">BibTeX Merge Machine</a></li>
+                    </ul>
+                </li>
+                <li><a href="/cv/">CV</a></li>
+                <li><a href="/contact/">Contact</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            
+            
+            <section class="about-me">
+    <div class="about-text">
+        <h2>About Me</h2>
+        <p>
+            I am a Master's student in Astrophysics, currently pursuing research on the interstellar medium (ISM). My work involves analyzing complex datasets and simulations to understand the physical and chemical processes that govern the lifecycle of stars and galaxies.
+        </p>
+        <p>
+            Beyond my academic pursuits, I am deeply passionate about coding and visual arts. This website serves as a portfolio of my research, a platform for my thoughts on science and technology, and a gallery for my creative projects.
+        </p>
+    </div>
+    <div class="about-image">
+        <img src="img/sasi_drawing.png" alt="Sasi Mitra profile picture">
+        {# Remember to replace this with a real image! #}
+    </div>
+</section>
+<h2>Latest Posts</h2>
+<p><em>This is where your blog posts will be listed automatically in the future!</em></p>
+<h2>Get In Touch</h2>
+<p>You can find me on the following platforms. Feel free to reach out for collaborations or just a friendly chat about the universe.</p>
+<div class="social-links">
+    <a href="https://github.com/your-username" target="_blank">GitHub</a> &bull;
+    <a href="https://twitter.com/your-username" target="_blank">Twitter</a> &bull;
+    <a href="https://linkedin.com/in/your-username" target="_blank">LinkedIn</a> &bull;
+    <a href="mailto:your.email@example.com">Email</a>
+</div>
+            
+        </main>
+
+        <footer class="site-footer">
+            <p>&copy; <span id="year"></span> Sasi Mitra.</p>
+        </footer>
+    </div>
+
+    
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    
+</body>
+</html>

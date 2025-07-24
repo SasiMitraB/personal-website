@@ -1,0 +1,50 @@
+# Name of your workflow
+name: Deploy Eleventy Site to GitHub Pages
+
+# Run this workflow on every push to the main branch
+on:
+  push:
+    branches: [ "main" ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "deploy"
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checks out your repository's code so the job can access it
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Sets up the specific version of Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3. Installs the dependencies from your package-lock.json file
+      - name: Install Dependencies
+        run: npm ci
+
+      # 4. Builds the site using the npm script
+      - name: Build with Eleventy
+        run: npx @11ty/eleventy
+
+      # 5. Prepares the built site for deployment
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 6. Uploads the built site (_site folder) as an artifact
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './_site'
+
+      # 7. Deploys the artifact to GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

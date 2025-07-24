@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BibTeX Jugaad // STATUS: CHALU</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Basic setup for the hacker vibe */
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: #111827; /* bg-gray-900 */
+            color: #d1d5db; /* text-gray-300 */
+        }
+        /* The main container for our work */
+        .kelsa-mane { /* Work House */
+            background-color: rgba(31, 41, 55, 0.5); /* bg-gray-800 with opacity */
+            backdrop-filter: blur(4px);
+            border: 1px solid #374151; /* border-gray-700 */
+        }
+        /* The box where you drop files */
+        .file-jaaga { /* File Place */
+            border: 2px dashed #4b5563; /* border-gray-600 */
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .file-jaaga.dragover {
+            background-color: #1f2937; /* bg-gray-800 */
+            border-color: #10b981; /* border-emerald-500 */
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        /* How the file looks in the list after you add it */
+        .file-patti { /* File List */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background-color: #1f2937; /* bg-gray-800 */
+            border-radius: 0.375rem;
+            border: 1px solid #374151; /* border-gray-700 */
+            margin-top: 0.5rem;
+            color: #9ca3af; /* text-gray-400 */
+        }
+        .file-patti span:first-child {
+            color: #d1d5db; /* text-gray-300 */
+        }
+        /* The main button to start the work */
+        .chalu-maadu-btn { /* Start Work Button */
+            background-color: #10b981; /* bg-emerald-500 */
+            color: #111827; /* text-gray-900 */
+            text-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+            transition: all 0.2s ease-in-out;
+        }
+        .chalu-maadu-btn:hover:not(:disabled) {
+            background-color: #34d399; /* bg-emerald-400 */
+            box-shadow: 0 0 20px rgba(52, 211, 153, 0.6);
+        }
+        .chalu-maadu-btn:disabled {
+            background-color: #4b5563; /* bg-gray-600 */
+            color: #9ca3af; /* text-gray-400 */
+            text-shadow: none;
+            cursor: not-allowed;
+        }
+        /* The download button, different color to show success */
+        .togo-maga-btn { /* Take it, man! Button */
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: #f9fafb; /* text-gray-50 */
+            text-shadow: 0 0 5px rgba(59, 130, 246, 0.7);
+        }
+        .togo-maga-btn:hover {
+            background-color: #60a5fa; /* bg-blue-400 */
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.6);
+        }
+        /* Styling for the status messages */
+        .status-base { border-left-width: 4px; }
+        .status-error { border-color: #ef4444; background-color: rgba(239, 68, 68, 0.1); color: #f87171; }
+        .status-success { border-color: #22c55e; background-color: rgba(34, 197, 94, 0.1); color: #4ade80; }
+        .status-warning { border-color: #f59e0b; background-color: rgba(245, 158, 11, 0.1); color: #fcd34d; }
+        .status-info { border-color: #3b82f6; background-color: rgba(59, 130, 246, 0.1); color: #93c5fd; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-300">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-emerald-400" style="text-shadow: 0 0 8px rgba(52, 211, 153, 0.5);">BibTeX Merge Machine</h1>
+            <p class="mt-2 text-lg text-gray-400">> execute: citation_cleanup_protocol</p>
+            <p class="mt-2 text-lg text-gray-400">Suppose you've got multiple .bib files in your LaTeX project, and you're looking to generate a single bib file with all the stuff that you've generated, here's the web app for you.</p>
+        </header>
+
+        <main class="kelsa-mane p-6 sm:p-8 rounded-xl shadow-2xl">
+            <!-- Step 1: AUX File -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-emerald-300 mb-2">Step 1: First, <code class="bg-gray-900 text-emerald-400 px-1 py-0.5 rounded">.aux</code> file gib</h2>
+                <p class="text-gray-500 mb-3 text-sm">> This tells what all you cited. In Overleaf click that doucment button next to file download, and there you'll see "Other logs and files". From there aux file you download off</p>
+                <div id="aux-file-jaaga" class="file-jaaga p-6 rounded-lg text-center cursor-pointer">
+                    <input type="file" id="aux-file-beku" class="hidden" accept=".aux">
+                    <div id="aux-placeholder-guru">
+                        <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <p class="mt-2 text-gray-400">Drag & drop or <span class="font-semibold text-emerald-400">select file</span></p>
+                        <p class="text-xs text-gray-500 mt-1">.AUX FILE ONLY, BOSS</p>
+                    </div>
+                    <div id="aux-file-display-maadu" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- Step 2: BIB Files -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-emerald-300 mb-2">Step 2: Now, all <code class="bg-gray-900 text-emerald-400 px-1 py-0.5 rounded">.bib</code> files haaki</h2>
+                <p class="text-gray-500 mb-3 text-sm">> All your reference files, one shot you can upload.</p>
+                <div id="bib-files-jaaga" class="file-jaaga p-6 rounded-lg text-center cursor-pointer">
+                    <input type="file" id="bib-files-kodi" class="hidden" accept=".bib" multiple>
+                    <div id="bib-placeholder-guru">
+                        <svg class="mx-auto h-12 w-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        <p class="mt-2 text-gray-400">Drag & drop or <span class="font-semibold text-emerald-400">select files</span></p>
+                        <p class="text-xs text-gray-500 mt-1">MULTIPLE .BIB FILES OK, CHILL</p>
+                    </div>
+                    <div id="bib-files-display-maadu" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- Step 3: Generate -->
+            <div class="text-center">
+                <button id="kelsa-maadu-btn" class="w-full sm:w-auto chalu-maadu-btn font-bold py-3 px-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 focus:ring-offset-gray-900">
+                    Chalu Maadu!
+                </button>
+            </div>
+
+            <!-- Results Section -->
+            <div id="result-anthu-bandide" class="mt-8 hidden">
+                 <div id="en-samachara" class="p-4 rounded-md"></div>
+                 <a id="togo-maga-download-btn" class="mt-4 w-full sm:w-auto inline-block text-center togo-maga-btn font-bold py-3 px-8 rounded-lg hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-colors hidden">
+                    Togo, Maga! (Download)
+                </a>
+            </div>
+        </main>
+
+        <footer class="text-center mt-8 text-sm text-gray-600">
+            <p>&copy; 2024. Coded in Bangalore. All processing done on your machine only, ayyo.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sakkath variable names, full local feel
+        const auxFileJaaga = document.getElementById('aux-file-jaaga');
+        const auxFileBeku = document.getElementById('aux-file-beku');
+        const auxPlaceholderGuru = document.getElementById('aux-placeholder-guru');
+        const auxFileDisplayMaadu = document.getElementById('aux-file-display-maadu');
+
+        const bibFilesJaaga = document.getElementById('bib-files-jaaga');
+        const bibFilesKodi = document.getElementById('bib-files-kodi');
+        const bibPlaceholderGuru = document.getElementById('bib-placeholder-guru');
+        const bibFilesDisplayMaadu = document.getElementById('bib-files-display-maadu');
+
+        const kelsaMaaduBtn = document.getElementById('kelsa-maadu-btn');
+        const resultAnthuBandide = document.getElementById('result-anthu-bandide');
+        const enSamachara = document.getElementById('en-samachara'); // "What's the news?"
+        const togoMagaBtn = document.getElementById('togo-maga-download-btn');
+
+        let auxFileContent = null;
+        let bibFilesContent = [];
+
+        // Function to read file, simple and sweet
+        function fileOdhappa(file) { // "Read the file, man"
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+
+        // Show the uploaded file names
+        function displayAuxFile() {
+            auxPlaceholderGuru.classList.add('hidden');
+            auxFileDisplayMaadu.classList.remove('hidden');
+            auxFileDisplayMaadu.innerHTML = `<div class="file-patti"><span>${auxFileContent.name}</span><span class="text-sm">${(auxFileContent.size / 1024).toFixed(2)} KB</span></div>`;
+        }
+
+        function displayBibFiles() {
+            if (bibFilesContent.length > 0) {
+                bibPlaceholderGuru.classList.add('hidden');
+                bibFilesDisplayMaadu.classList.remove('hidden');
+                bibFilesDisplayMaadu.innerHTML = bibFilesContent.map(file =>
+                    `<div class="file-patti"><span>${file.name}</span><span class="text-sm">${(file.size / 1024).toFixed(2)} KB</span></div>`
+                ).join('');
+            } else {
+                bibPlaceholderGuru.classList.remove('hidden');
+                bibFilesDisplayMaadu.classList.add('hidden');
+            }
+        }
+
+        // Setup the drag-drop area, proper jugaad
+        function setupDropJaaga(jaaga, input, isMultiple, fileHandler) {
+            jaaga.addEventListener('click', () => input.click());
+            jaaga.addEventListener('dragover', (e) => { e.preventDefault(); jaaga.classList.add('dragover'); });
+            jaaga.addEventListener('dragleave', () => { jaaga.classList.remove('dragover'); });
+            jaaga.addEventListener('drop', (e) => {
+                e.preventDefault();
+                jaaga.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+            input.addEventListener('change', (e) => {
+                if (isMultiple) fileHandler([...e.target.files]);
+                else fileHandler(e.target.files[0]);
+            });
+        }
+
+        setupDropJaaga(auxFileJaaga, auxFileBeku, false, (file) => {
+            if (file) { auxFileContent = file; displayAuxFile(); }
+        });
+
+        setupDropJaaga(bibFilesJaaga, bibFilesKodi, true, (files) => {
+            if (files && files.length > 0) { bibFilesContent = files; displayBibFiles(); }
+        });
+
+        // The main logic, where all the magic happens
+        function parseAuxMaga(content) {
+            const citationRegex = /\\citation\{([^}]+)\}/g;
+            const citedKeys = new Set();
+            let match;
+            while ((match = citationRegex.exec(content)) !== null) {
+                match[1].split(',').forEach(key => { if (key.trim()) citedKeys.add(key.trim()); });
+            }
+            return citedKeys;
+        }
+
+        function parseBibMaga(content) {
+            const entries = new Map();
+            const entryRegex = /@\w+\s*\{([^,]+),/g;
+            let match;
+            while((match = entryRegex.exec(content)) !== null) {
+                const key = match[1].trim();
+                const startIndex = match.index;
+                let braceCount = 0;
+                let currentIndex = content.indexOf('{', startIndex) + 1;
+                for (let i = currentIndex; i < content.length; i++) {
+                    if (content[i] === '{') braceCount++;
+                    else if (content[i] === '}') {
+                        if (braceCount === 0) {
+                            entries.set(key, content.substring(startIndex, i + 1));
+                            break;
+                        }
+                        braceCount--;
+                    }
+                }
+            }
+            return entries;
+        }
+
+        // This is where we start the work when button is clicked
+        async function chaluMaaduKelsa() { // "Start the work"
+            if (!auxFileContent) { showSamachara("Ayyayyo! First AUX file give bro.", 'error'); return; }
+            if (bibFilesContent.length === 0) { showSamachara("Dei. where is the bib file da?.", 'error'); return; }
+
+            kelsaMaaduBtn.disabled = true;
+            kelsaMaaduBtn.textContent = 'Oota Aitha?...'; // "Had lunch?" -> "Is it done?"
+            showSamachara("Files reading madtha idini...", 'info');
+
+            try {
+                const auxText = await fileOdhappa(auxFileContent);
+                const citedKeys = parseAuxMaga(auxText);
+                showSamachara(`Sakkath! ${citedKeys.size} citations found. Now checking BIB files...`, 'info');
+
+                if (citedKeys.size === 0) {
+                    showSamachara("Nothing inside AUX file macha. Master file will be empty, guru.", 'warning');
+                    kelsaMaaduBtn.disabled = false;
+                    kelsaMaaduBtn.textContent = 'Chalu Maadu!';
+                    return;
+                }
+
+                const allBibEntries = new Map();
+                for (const file of bibFilesContent) {
+                    const bibText = await fileOdhappa(file);
+                    const entries = parseBibMaga(bibText);
+                    for (const [key, value] of entries) {
+                        if (!allBibEntries.has(key)) allBibEntries.set(key, value);
+                    }
+                }
+                showSamachara(`Total ${allBibEntries.size} entries parsed. Master file getting ready...`, 'info');
+
+                const masterBibParts = [];
+                const missingKeys = new Set();
+                for (const key of citedKeys) {
+                    if (allBibEntries.has(key)) masterBibParts.push(allBibEntries.get(key));
+                    else missingKeys.add(key);
+                }
+
+                const masterBibContent = masterBibParts.join('\n\n');
+                let successMessage = `Chindi! Master file ready with ${masterBibParts.length} entries.`;
+                if (missingKeys.size > 0) {
+                    showSamachara(`${successMessage}<br><br><strong>Warning:</strong> These ${missingKeys.size} keys missing, boss: <br><code class="text-xs">${[...missingKeys].join(', ')}</code>`, 'warning');
+                } else {
+                    showSamachara(successMessage, 'success');
+                }
+
+                prepareTogoMaga(masterBibContent);
+
+            } catch (error) {
+                console.error("Enappa error bantu:", error);
+                showSamachara(`Ayyayyo, something went wrong: ${error.message}.`, 'error');
+            } finally {
+                kelsaMaaduBtn.disabled = false;
+                kelsaMaaduBtn.textContent = 'Begin Processing!';
+            }
+        }
+
+        // Show status message to user
+        function showSamachara(message, type = 'info') { // "Show the news"
+            resultAnthuBandide.classList.remove('hidden');
+            enSamachara.innerHTML = message;
+            enSamachara.className = 'p-4 rounded-md status-base'; // reset
+            enSamachara.classList.add(`status-${type}`);
+        }
+
+        // Get the download button ready
+        function prepareTogoMaga(content) { // "Prepare to take it, man"
+            const blob = new Blob([content], { type: 'application/x-bibtex;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            togoMagaBtn.href = url;
+            togoMagaBtn.download = 'master_references.bib';
+            togoMagaBtn.classList.remove('hidden');
+        }
+
+        kelsaMaaduBtn.addEventListener('click', chaluMaaduKelsa);
+    </script>
+</body>
+</html>
