@@ -7,15 +7,16 @@ layout: base.njk
     <div class="about-text">
         <h2>About Me</h2>
         <p>
-            I am a Master's student in Astrophysics, currently pursuing research on the interstellar medium (ISM). My work involves analyzing complex datasets and simulations to understand the physical and chemical processes that govern the lifecycle of stars and galaxies.
+           Hello There!
+
+           My name is Sasi Mitra, currently a Fifth Year BSMS Student at IISER Tirupati. I am currently working on my Master's thesis at the Australian National University, under the supervision of Dr. Amit Seta. As part of my Master's Thesis, I'm looking towards trying to understand the morphology of Star Forming regions, using tools that are sensitive to higher-order moments, such as Minkowski functionals.
         </p>
         <p>
-            Beyond my academic pursuits, I am deeply passionate about coding and visual arts. This website serves as a portfolio of my research, a platform for my thoughts on science and technology, and a gallery for my creative projects.
+            Beyond my academic pursuits, I am deeply passionate about coding, watching movies, and reading novels. This website serves as a portfolio of my research, a platform for my thoughts on science and technology, and a gallery for nonsense I build and think needs a platform..
         </p>
     </div>
     <div class="about-image">
         <img src="{{ '/img/sasi_drawing.png' | url }}" alt="Sasi Mitra profile picture">
-        {# Remember to replace this with a real image! #}
     </div>
 </section>
 
@@ -25,7 +26,7 @@ layout: base.njk
 
 ## Get In Touch
 
-You can find me on the following platforms. Feel free to reach out for collaborations or just a friendly chat about the universe.
+You can find me on the following platforms. The links are just placeholders, I'll get back to these later.
 
 <div class="social-links">
     <a href="https://github.com/your-username" target="_blank">GitHub</a> &bull;
