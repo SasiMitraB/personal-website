@@ -10,7 +10,7 @@
     {# Linking to Google Fonts to match your Wordpress site's style #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Playfair+Display:wght@700&family=VT323&display=swap" rel="stylesheet">
 
     {# Linking to our CSS file #}
     <link rel="stylesheet" href="{{ '/css/style.css' | url }}">
@@ -20,17 +20,19 @@
     <div class="wrapper">
         <header class="site-header">
             <h1>Sasi Mitra</h1>
-            <p class="tagline">Astrophysics | Code | Art</p>
+            <p class="tagline">Astrophysics | Code | Sleep</p>
         </header>
 
         <nav class="main-nav">
             <ul>
                 <li><a href="{{ '/' | url }}">Home</a></li>
                 <li><a href="{{ '/research/' | url }}">Research</a></li>
-                <li><a href="{{ '/blog/' | url }}">Blog</a></li>
+                <li><a href="https://substack.com/@sasimitrabehara?utm_campaign=profile&utm_medium=profile-page">Blog</a></li>
                 
                 <li class="dropdown"> <a href="#" class="drop-btn">Funky Web Apps ▼</a>
-                    <ul class="dropdown-content"> <li><a href="{{ '/apps/bibtex-merger/' | url }}">BibTeX Merge Machine</a></li>
+                    <ul class="dropdown-content"> 
+                        <li><a href="{{ '/apps/bibtex-merger/' | url }}">BibTeX Merge Machine</a></li>
+                        <li><a href="{{ '/apps/markdown-to-pdf/' | url }}">Markdown to PDF</a></li>
                     </ul>
                 </li>
                 <li><a href="{{ '/cv/' | url }}">CV</a></li>

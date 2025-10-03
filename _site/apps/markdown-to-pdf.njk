@@ -1,0 +1,627 @@
+---
+layout: app_layout.njk
+title: Markdown to PDF Converter
+---
+
+<style>
+    /* App-specific styles using site's hacker color scheme */
+    .app-container {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .app-header {
+        background-color: #282828;
+        border-bottom: 1px solid #00ff00;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .app-header h1 {
+        font-family: 'VT323', monospace;
+        color: #00ff00;
+        font-size: 1.8rem;
+        margin: 0;
+        text-shadow: 0 0 5px #00ff00;
+    }
+    
+    .style-selector {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .style-selector label {
+        color: #00cc00;
+        font-size: 0.9rem;
+    }
+    
+    .style-selector select {
+        background-color: #333;
+        color: #00ff00;
+        border: 1px solid #00ff00;
+        border-radius: 3px;
+        padding: 0.3rem 0.5rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+    }
+    
+    .pdf-btn {
+        background-color: transparent;
+        color: #00ff00;
+        border: 1px solid #00ff00;
+        padding: 0.5rem 1rem;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .pdf-btn:hover {
+        background-color: #00ff00;
+        color: #1e1e1e;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+    
+    .main-workspace {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background-color: #00ff00;
+        overflow: hidden;
+    }
+    
+    @media (max-width: 768px) {
+        .main-workspace {
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+    }
+    
+    .editor-pane, .preview-pane {
+        background-color: #1e1e1e;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .pane-header {
+        background-color: #333;
+        color: #00ff00;
+        padding: 0.5rem 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #00ff00;
+        flex-shrink: 0;
+    }
+    
+    .editor-container {
+        position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    #editor {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        background-color: #1e1e1e;
+        color: #00ff00;
+        border: none;
+        outline: none;
+        padding: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        resize: none;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    
+    #preview {
+        flex: 1;
+        background-color: #ffffff;
+        color: #111827;
+        padding: 1.5rem;
+        overflow-y: auto;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    
+    .editor-container {
+        position: relative;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* Drag and drop overlay */
+    .drop-zone {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0, 0, 0, 0.8);
+        border: 3px dashed #00ff00;
+        color: #00ff00;
+        font-size: 1.2rem;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+        z-index: 10;
+    }
+    
+    .drag-over .drop-zone {
+        opacity: 1;
+    }
+    
+    /* Preview markdown styling - Clean document styling, not hacker theme */
+    #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+        color: #111827 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 0.3em;
+        margin-top: 1.5em;
+        margin-bottom: 1em;
+        text-shadow: none !important;
+    }
+    #preview h1 { font-size: 2em; }
+    #preview h2 { font-size: 1.5em; }
+    #preview h3 { font-size: 1.25em; }
+    #preview h4 { font-size: 1.1em; }
+    #preview h5 { font-size: 1em; }
+    #preview h6 { font-size: 0.9em; }
+    
+    #preview p { 
+        line-height: 1.6; 
+        margin-bottom: 1em; 
+        color: #111827;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    #preview a { color: #3b82f6; text-decoration: none; }
+    #preview a:hover { text-decoration: underline; }
+    #preview code {
+        background-color: #f3f4f6;
+        padding: 0.2em 0.4em;
+        margin: 0;
+        font-size: 85%;
+        border-radius: 6px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+        color: #111827;
+    }
+    #preview pre {
+        background-color: #f3f4f6;
+        padding: 1em;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    }
+    #preview pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+    #preview blockquote {
+        padding-left: 1em;
+        color: #6b7280;
+        border-left: 0.25em solid #d1d5db;
+        margin-left: 0;
+        margin-right: 0;
+        font-style: italic;
+    }
+    #preview ul, #preview ol {
+        padding-left: 2em;
+        margin-bottom: 1em;
+        color: #111827;
+    }
+    #preview li {
+        margin-top: 0.25em;
+        color: #111827;
+    }
+    #preview table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1em;
+    }
+    #preview th, #preview td {
+        border: 1px solid #d1d5db;
+        padding: 0.5em 0.75em;
+    }
+    #preview th {
+        font-weight: 600;
+        background-color: #f9fafb;
+    }
+    
+    /* KaTeX error styling */
+    #preview .katex-error {
+        background-color: #fef2f2;
+        border: 1px solid #fca5a5;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin: 0.5rem 0;
+        color: #dc2626;
+        font-family: 'Courier New', monospace;
+    }
+    
+    /* Theme variants for preview - these override base styles */
+    #preview.theme-open-sans-serif {
+        font-family: 'Open Sans', system-ui, sans-serif !important;
+    }
+    #preview.theme-open-sans-serif h1,
+    #preview.theme-open-sans-serif h2,
+    #preview.theme-open-sans-serif h3,
+    #preview.theme-open-sans-serif h4,
+    #preview.theme-open-sans-serif h5,
+    #preview.theme-open-sans-serif h6 {
+        font-family: 'Merriweather', Georgia, serif !important;
+        color: #111827 !important;
+        text-shadow: none !important;
+    }
+    
+    #preview.theme-github {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+        color: #24292f !important;
+    }
+    #preview.theme-github h1,
+    #preview.theme-github h2,
+    #preview.theme-github h3,
+    #preview.theme-github h4,
+    #preview.theme-github h5,
+    #preview.theme-github h6 {
+        color: #24292f !important;
+        text-shadow: none !important;
+    }
+    #preview.theme-github a { color: #0969da !important; }
+    #preview.theme-github code {
+        background: #f6f8fa;
+        border: 1px solid #d0d7de;
+    }
+    #preview.theme-github pre {
+        background: #f6f8fa;
+        border: 1px solid #d0d7de;
+    }
+    
+    #preview.theme-newspaper {
+        font-family: 'Merriweather', Georgia, serif !important;
+        line-height: 1.85;
+        color: #111827 !important;
+        text-align: justify;
+    }
+    #preview.theme-newspaper h1,
+    #preview.theme-newspaper h2,
+    #preview.theme-newspaper h3,
+    #preview.theme-newspaper h4,
+    #preview.theme-newspaper h5,
+    #preview.theme-newspaper h6 {
+        color: #111827 !important;
+        text-shadow: none !important;
+    }
+    
+    #preview.theme-solarized-light {
+        background-color: #fdf6e3 !important;
+        color: #586e75 !important;
+    }
+    #preview.theme-solarized-light h1,
+    #preview.theme-solarized-light h2,
+    #preview.theme-solarized-light h3,
+    #preview.theme-solarized-light h4,
+    #preview.theme-solarized-light h5,
+    #preview.theme-solarized-light h6 {
+        color: #586e75 !important;
+        text-shadow: none !important;
+    }
+    #preview.theme-solarized-light a { color: #268bd2; }
+    #preview.theme-solarized-light code { background-color: #eee8d5; }
+    #preview.theme-solarized-light pre { background-color: #eee8d5; }
+    
+    /* Print styles - Only show the preview content */
+    @media print {
+        /* Hide everything except the preview content */
+        body * { visibility: hidden; }
+        #preview, #preview * { visibility: visible; }
+        
+        /* Position the preview to fill the page */
+        #preview {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: white !important;
+            color: #111827 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        }
+        
+        /* Ensure math renders properly in print */
+        #preview .katex { color: #111827 !important; }
+        
+        /* Page setup */
+        @page { 
+            size: Letter; 
+            margin: 0.75in;
+        }
+        
+        /* Reset any inherited styles that might interfere */
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+            color: #111827 !important;
+            text-shadow: none !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        }
+    }
+    
+    .print-footer { display: none; }
+    
+    .app-footer {
+        text-align: center;
+        padding: 1rem;
+        border-top: 1px dashed #00ff00;
+        color: #666;
+        font-size: 0.9rem;
+        background-color: #1e1e1e;
+    }
+</style>
+
+<!-- KaTeX CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css" integrity="sha384-Xi8rHCmBmhbuyyhbI88391ZKP2dmfnOl4rT9ZfRI7zTDRGbadscOPiNlGz-KvM8I" crossorigin="anonymous">
+<!-- Google Fonts for theme variants -->
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<div class="app-container">
+    <header class="app-header no-print">
+        <h1>Markdown to PDF Converter</h1>
+        
+        <div class="style-selector">
+            <label for="style-select">Style:</label>
+            <select id="style-select">
+                <option value="classic">Classic</option>
+                <option value="open-sans-serif">OpenSansSerif</option>
+                <option value="github">GitHub</option>
+                <option value="newspaper">Newspaper</option>
+                <option value="solarized-light">SolarizedLight</option>
+            </select>
+        </div>
+        
+        <button id="save-pdf-btn" class="pdf-btn">
+            Generate PDF
+        </button>
+    </header>
+
+    <main class="main-workspace">
+        <div class="editor-pane">
+            <div class="pane-header no-print">
+                > Markdown Editor
+            </div>
+            <div class="editor-container">
+                <textarea id="editor" spellcheck="false" placeholder="> Start typing your markdown here..."></textarea>
+                <div class="drop-zone">
+                    <span>Drop .md file here, boss</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="preview-pane">
+            <div class="pane-header no-print">
+                > Live Preview
+            </div>
+            <div id="preview"></div>
+        </div>
+    </main>
+</div>
+
+<footer class="app-footer no-print">
+    <p>All processing happens in your browser. No files are uploaded to any server.</p>
+</footer>
+
+<!-- External Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.8/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js" integrity="sha384-X/XCfB4uVMscftjurYYgb6ZNlDab7RBY+QyU+pJ4C3msbc_x6Krqi8PUGbSHfrOh" crossorigin="anonymous"></script>
+
+<script>
+// Initialize after DOM content is loaded
+ document.addEventListener('DOMContentLoaded', () => {
+     const editor = document.getElementById('editor');
+     const savePdfBtn = document.getElementById('save-pdf-btn');
+     const preview = document.getElementById('preview');
+     const editorContainer = document.querySelector('.editor-container');
+     const styleSelect = document.getElementById('style-select');
+
+     // --- LaTeX Processing Functions ---
+     function renderLaTeX(text) {
+        // Process block math first ($$...$$)
+        text = text.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, math) => {
+            try {
+                return katex.renderToString(math.trim(), { 
+                    displayMode: true, 
+                    throwOnError: false,
+                    output: 'html'
+                });
+            } catch (error) {
+                console.warn('KaTeX block rendering error:', error);
+                return `<div class="katex-error"><pre>${math}</pre></div>`;
+            }
+        });
+        
+        // Process inline math ($...$)
+        text = text.replace(/\$([^$\n]+?)\$/g, (match, math) => {
+            try {
+                return katex.renderToString(math.trim(), { 
+                    displayMode: false, 
+                    throwOnError: false,
+                    output: 'html'
+                });
+            } catch (error) {
+                console.warn('KaTeX inline rendering error:', error);
+                return `<span class="katex-error"><code>${math}</code></span>`;
+            }
+        });
+        
+        return text;
+     }
+
+    // --- Initial Content ---
+    const initialMarkdown = `# Welcome to the Markdown to PDF Converter!
+
+This is a live Markdown editor. Your changes on the left are rendered instantly on the right.
+
+## Features
+- **Live Preview**: See your rendered Markdown as you type.
+- **LaTeX Support**: Write beautiful mathematical formulas.
+- **Drag & Drop**: Drop a \`.md\` file onto the editor.
+- **PDF Export**: Save your work as a high-quality PDF.
+
+---
+
+### LaTeX Examples (Now with multi-line support!)
+
+You can write inline math like the Pythagorean theorem, $a^2 + b^2 = c^2$.
+
+Or display math on its own line, even with newlines in the source code for readability:
+
+$$P(x_i \\in [a_j, b_j)) = \\int_{a_j}^{b_j} PDF(x_i, e_i) dx$$
+
+The famous Euler's identity is also easy to write: $e^{i\\pi} + 1 = 0$.
+
+### Markdown Examples
+
+- Unordered List Item 1
+- Unordered List Item 2
+
+1. Ordered List Item 1
+2. Ordered List Item 2
+
+> This is a blockquote. It's great for quoting text from other sources.
+
+You can also create tables:
+
+| Feature      | Status      |
+|--------------|-------------|
+| Markdown     | Implemented |
+| LaTeX        | Implemented |
+| PDF Export   | Implemented |
+`;
+    editor.value = initialMarkdown;
+
+    // --- Core Rendering Function ---
+    const render = () => {
+        try {
+            // First, process LaTeX in the raw markdown
+            const processedMarkdown = renderLaTeX(editor.value);
+            
+            // Then parse with Marked.js
+            const rawHtml = marked.parse(processedMarkdown, { 
+                gfm: true, 
+                breaks: true, 
+                sanitize: false 
+            });
+            
+            // Finally, sanitize while preserving KaTeX elements
+            preview.innerHTML = DOMPurify.sanitize(rawHtml, {
+                ADD_TAGS: ["math", "mi", "mo", "mn", "msup", "msub", "mrow", "mfrac", "munder", "mover", "annotation", "semantics", "span"],
+                ADD_ATTR: ["style", "class", "data-katex"]
+            });
+        } catch (error) {
+            console.error('Rendering error:', error);
+            preview.innerHTML = '<div style="color: red; padding: 1rem;">Error rendering content. Please check your markdown syntax.</div>';
+        }
+    };
+
+    // --- Event Listeners ---
+    editor.addEventListener('input', render);
+
+    savePdfBtn.addEventListener('click', () => {
+        window.print();
+    });
+
+    // Drag and Drop functionality
+    editorContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        editorContainer.classList.add('drag-over');
+    });
+
+    editorContainer.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        editorContainer.classList.remove('drag-over');
+    });
+
+    editorContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        editorContainer.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type === 'text/markdown' || file.name.endsWith('.md')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    editor.value = event.target.result;
+                    render();
+                };
+                reader.readAsText(file);
+            } else {
+                const originalText = editor.value;
+                editor.value = "Error: Please drop a valid .md file.\n\n" + originalText;
+                setTimeout(() => { editor.value = originalText; }, 2000);
+            }
+        }
+    });
+
+    // Theme handling
+    const themeClasses = [
+        'theme-open-sans-serif',
+        'theme-github',
+        'theme-newspaper',
+        'theme-solarized-light'
+    ];
+    
+    function applyTheme(theme) {
+        preview.classList.remove(...themeClasses);
+        switch (theme) {
+            case 'open-sans-serif':
+                preview.classList.add('theme-open-sans-serif'); break;
+            case 'github':
+                preview.classList.add('theme-github'); break;
+            case 'newspaper':
+                preview.classList.add('theme-newspaper'); break;
+            case 'solarized-light':
+                preview.classList.add('theme-solarized-light'); break;
+            default:
+                break;
+        }
+    }
+    
+    const savedTheme = localStorage.getItem('mdTheme') || 'classic';
+    styleSelect.value = savedTheme;
+    applyTheme(savedTheme);
+    styleSelect.addEventListener('change', (e) => {
+        const theme = e.target.value;
+        applyTheme(theme);
+        localStorage.setItem('mdTheme', theme);
+    });
+
+    // Initial render on page load
+    render();
+});
+</script>

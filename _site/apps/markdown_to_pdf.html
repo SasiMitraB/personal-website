@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown to PDF with LaTeX</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- DOMPurify for sanitizing HTML output (security) -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.8/dist/purify.min.js"></script>
+
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css" xintegrity="sha384-Xi8rHCmBmhbuyyhbI88391ZKP2dmfnOl4rT9ZfRI7zTDRGbadscOPiNlGz-KvM8I" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js" xintegrity="sha384-X/XCfB4uVMscftjurYYgb6ZNlDab7RBY+QyU+pJ4C3msbc_x6Krqi8PUGbSHfrOh" crossorigin="anonymous"></script>
+    
+    <!-- Auto-render extension for KaTeX -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js" xintegrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
+
+    <!-- Google Fonts for theme variants -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom styles for a better editor and preview experience */
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+        }
+        
+        /* Style for the textarea to make it look clean */
+        #editor {
+            font-family: 'Courier New', Courier, monospace;
+            resize: none;
+            border: none;
+            outline: none;
+            background-color: #1f2937; /* gray-800 */
+            color: #d1d5db; /* gray-300 */
+        }
+
+        /* Style for the preview pane */
+        #preview {
+            background-color: #ffffff;
+            color: #111827; /* gray-900 */
+        }
+        
+        /* Styling for rendered markdown elements */
+        #preview h1, #preview h2, #preview h3 {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.3em;
+            margin-top: 1.5em;
+            margin-bottom: 1em;
+        }
+        #preview h1 { font-size: 2em; font-weight: 600; }
+        #preview h2 { font-size: 1.5em; font-weight: 600; }
+        #preview h3 { font-size: 1.25em; font-weight: 600; }
+        #preview p { line-height: 1.6; margin-bottom: 1em; }
+        #preview a { color: #3b82f6; text-decoration: none; }
+        #preview a:hover { text-decoration: underline; }
+        #preview code {
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 6px;
+        }
+        #preview pre {
+            background-color: #f3f4f6;
+            padding: 1em;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        #preview pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        #preview blockquote {
+            padding-left: 1em;
+            color: #6b7280;
+            border-left: 0.25em solid #d1d5db;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        #preview ul, #preview ol {
+            padding-left: 2em;
+            margin-bottom: 1em;
+        }
+        #preview li {
+            margin-top: 0.25em;
+        }
+        #preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+        }
+        #preview th, #preview td {
+            border: 1px solid #d1d5db;
+            padding: 0.5em 0.75em;
+        }
+        #preview th {
+            font-weight: 600;
+            background-color: #f9fafb;
+        }
+
+        /* Drag and drop overlay */
+        .drop-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(107, 114, 128, 0.7);
+            border: 3px dashed #ffffff;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            z-index: 10;
+        }
+        .drag-over .drop-zone {
+            opacity: 1;
+        }
+
+        /* Screen-only by default */
+        .print-footer { display: none; }
+
+        @media print {
+            html, body { height: auto; }
+            body { background: #ffffff; color: #111827; overflow: visible !important; }
+
+            /* Hide non-print areas */
+            header, #editor-container, .no-print { display: none !important; }
+
+            /* Use normal block flow; disable grid/flex */
+            main { display: block !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; }
+            .grid, .md\:grid-cols-2 { display: block !important; grid-template-columns: none !important; gap: 0 !important; }
+            .flex, .flex-col { display: block !important; }
+            .flex-grow { flex: none !important; }
+            .h-full { height: auto !important; }
+
+            /* Ensure the preview containers don’t clip content */
+            .bg-white.rounded-lg.shadow-lg { height: auto !important; max-height: none !important; overflow: visible !important; box-shadow: none !important; border-radius: 0 !important; background: #ffffff !important; }
+            #preview { overflow: visible !important; height: auto !important; max-height: none !important; width: auto !important; margin-bottom: 1cm !important; }
+
+            /* Avoid breaking certain elements across pages when possible */
+            #preview pre, #preview blockquote, #preview table { break-inside: avoid; page-break-inside: avoid; }
+
+            /* Custom page footer with numbers */
+            .print-footer {
+                display: block;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                text-align: center;
+                font-size: 12px;
+                color: #6b7280; /* gray-500 */
+            }
+            .print-footer .page-numbers::after {
+                content: "Page " counter(page) " of " counter(pages);
+            }
+
+            /* Page size and margins (browser headers/footers must be disabled in dialog) */
+            @page { size: Letter; margin: 0.5in; }
+        }
+
+        /* Theme: OpenSansSerif */
+        #preview.theme-open-sans-serif {
+            font-family: 'Open Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        }
+        #preview.theme-open-sans-serif h1,
+        #preview.theme-open-sans-serif h2,
+        #preview.theme-open-sans-serif h3 {
+            font-family: 'Merriweather', Georgia, 'Times New Roman', serif;
+            letter-spacing: 0.2px;
+        }
+
+        /* Theme: GitHub-like */
+        #preview.theme-github {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            color: #24292f;
+        }
+        #preview.theme-github a { color: #0969da; }
+        #preview.theme-github code {
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+        }
+        #preview.theme-github pre {
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+        }
+        #preview.theme-github table th,
+        #preview.theme-github table td {
+            border-color: #d0d7de;
+        }
+
+        /* Theme: Newspaper */
+        #preview.theme-newspaper {
+            font-family: 'Merriweather', Georgia, 'Times New Roman', serif;
+            line-height: 1.85;
+            color: #111827;
+            text-align: justify;
+        }
+        #preview.theme-newspaper h1,
+        #preview.theme-newspaper h2,
+        #preview.theme-newspaper h3 {
+            text-align: left;
+            font-weight: 700;
+        }
+        #preview.theme-newspaper blockquote {
+            font-style: italic;
+            color: #374151;
+        }
+
+        /* Theme: Solarized Light */
+        #preview.theme-solarized-light {
+            background-color: #fdf6e3;
+            color: #586e75;
+        }
+        #preview.theme-solarized-light a { color: #268bd2; }
+        #preview.theme-solarized-light code { background-color: #eee8d5; }
+        #preview.theme-solarized-light pre { background-color: #eee8d5; }
+        #preview.theme-solarized-light table th,
+        #preview.theme-solarized-light table td { border-color: #e5decf; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-full flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-md p-2 flex justify-between items-center flex-shrink-0 no-print">
+        <h1 class="text-xl font-bold text-gray-100 no-print">Markdown to PDF Converter</h1>
+
+        <!-- Style selector -->
+        <div class="flex items-center gap-2 no-print">
+            <label for="style-select" class="text-sm text-gray-300 no-print">Style:</label>
+            <select id="style-select" class="bg-gray-700 text-gray-100 text-sm rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 no-print">
+                <option value="classic">Classic</option>
+                <option value="open-sans-serif">OpenSansSerif</option>
+                <option value="github">GitHub</option>
+                <option value="newspaper">Newspaper</option>
+                <option value="solarized-light">SolarizedLight</option>
+            </select>
+        </div>
+
+        <button id="save-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 no-print">
+            Save as PDF
+        </button>
+    </header>
+
+    <!-- Main Content: Editor and Preview -->
+    <main class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 p-4 overflow-hidden">
+        <!-- Editor Pane -->
+        <div id="editor-container" class="relative h-full flex flex-col bg-gray-800 rounded-lg shadow-lg">
+            <div class="p-2 bg-gray-700 rounded-t-lg text-sm font-semibold text-gray-300">
+                Markdown Editor
+            </div>
+            <textarea id="editor" class="flex-grow p-4 w-full h-full text-base" spellcheck="false"></textarea>
+            <div class="drop-zone">
+                <span>Drop Markdown file here</span>
+            </div>
+        </div>
+
+        <!-- Preview Pane -->
+        <div class="h-full flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+             <div class="p-2 bg-gray-200 rounded-t-lg text-sm font-semibold text-gray-700 no-print">
+                Live Preview
+             </div>
+             <div id="preview" class="flex-grow p-6 overflow-y-auto"></div>
+        </div>
+    </main>
+
+    <!-- Print-only footer -->
+    <div class="print-footer">
+        <span class="page-numbers"></span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const editor = document.getElementById('editor');
+            const savePdfBtn = document.getElementById('save-pdf-btn');
+            const preview = document.getElementById('preview');
+            const editorContainer = document.getElementById('editor-container');
+            const styleSelect = document.getElementById('style-select');
+
+            // --- Marked.js Extensions for LaTeX ---
+            // These extensions prevent Marked from interpreting LaTeX syntax as Markdown,
+            // which solves issues with multi-line math blocks and underscores in formulas.
+            
+            // Extension for block-level math ($$...$$)
+            const blockKatex = {
+              name: 'blockKatex',
+              level: 'block',
+              start(src) {
+                // A quick test to see if we should run the tokenizer
+                return src.match(/^\s*\$\$/m)?.index;
+              },
+              tokenizer(src, tokens) {
+                // Regex to find a block of math, from $$to$$
+                const rule = /^\s*\$\$\s*([\s\S]+?)\s*\$\$\s*(?:\n|$)/;
+                const match = rule.exec(src);
+                if (match) {
+                  return {
+                    type: 'blockKatex',
+                    raw: match[0],
+                    text: match[1].trim(), // The LaTeX content
+                  };
+                }
+              },
+              renderer(token) {
+                // Return the math block wrapped in a paragraph.
+                // The KaTeX auto-render extension will find the $$ delimiters.
+                return `<p>$$${token.text}$$</p>`;
+              }
+            };
+
+            // Extension for inline math ($...$)
+            const inlineKatex = {
+              name: 'inlineKatex',
+              level: 'inline',
+              start(src) {
+                // A quick test to see if we should run the tokenizer
+                return src.indexOf('$');
+              },
+              tokenizer(src, tokens) {
+                // Regex to find inline math
+                // It looks for a starting $, content that is not $, and an ending $
+                const rule = /^\$((?:\\\$|[^$])+)\$/;
+                const match = rule.exec(src);
+                if (match) {
+                  return {
+                    type: 'inlineKatex',
+                    raw: match[0],
+                    text: match[1] // The LaTeX content
+                  };
+                }
+              },
+              renderer(token) {
+                // Return the math inline.
+                // The KaTeX auto-render extension will find the $ delimiters.
+                return `$${token.text}$`;
+              }
+            };
+
+            // Register the extensions with Marked
+            marked.use({ extensions: [blockKatex, inlineKatex] });
+
+            // --- Initial Content ---
+            const initialMarkdown = `# Welcome to the Markdown to PDF Converter!
+
+This is a live Markdown editor. Your changes on the left are rendered instantly on the right.
+
+## Features
+- **Live Preview**: See your rendered Markdown as you type.
+- **LaTeX Support**: Write beautiful mathematical formulas.
+- **Drag & Drop**: Drop a \`.md\` file onto the editor.
+- **PDF Export**: Save your work as a high-quality PDF.
+
+---
+
+### LaTeX Examples (Now with multi-line support!)
+
+You can write inline math like the Pythagorean theorem, $a^2 + b^2 = c^2$.
+
+Or display math on its own line, even with newlines in the source code for readability:
+
+$$P(x_i \\in [a_j, b_j)) = \\int_{a_j}^{b_j} PDF(x_i, e_i) dx$$
+
+The famous Euler's identity is also easy to write: $e^{i\\pi} + 1 = 0$.
+
+### Markdown Examples
+
+- Unordered List Item 1
+- Unordered List Item 2
+
+1. Ordered List Item 1
+2. Ordered List Item 2
+
+> This is a blockquote. It's great for quoting text from other sources.
+
+You can also create tables:
+
+| Feature      | Status      |
+|--------------|-------------|
+| Markdown     | Implemented |
+| LaTeX        | Implemented |
+| PDF Export   | Implemented |
+`;
+            editor.value = initialMarkdown;
+
+            // --- Core Rendering Function ---
+            const render = () => {
+                // 1. Parse Markdown to HTML using Marked.js (with our custom extensions)
+                const rawHtml = marked.parse(editor.value, {
+                    gfm: true,
+                    breaks: true,
+                    mangle: false,
+                    headerIds: false
+                });
+
+                // 2. Sanitize the HTML using DOMPurify for security
+                const sanitizedHtml = DOMPurify.sanitize(rawHtml);
+                preview.innerHTML = sanitizedHtml;
+
+                // 3. Render LaTeX using KaTeX
+                // This function finds and renders math in the preview element
+                renderMathInElement(preview, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '\\[', right: '\\]', display: true}
+                    ],
+                    throwOnError: false
+                });
+            };
+
+            // --- Event Listeners ---
+            
+            // Render on input
+            editor.addEventListener('input', render);
+
+            // PDF Generation (selectable text via print to PDF)
+            savePdfBtn.addEventListener('click', () => {
+                // In the print dialog, uncheck “Headers and footers” to remove default URL/date.
+                window.print();
+            });
+
+            // Drag and Drop functionality
+            editorContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.add('drag-over');
+            });
+
+            editorContainer.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.remove('drag-over');
+            });
+
+            editorContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type === 'text/markdown' || file.name.endsWith('.md')) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            editor.value = event.target.result;
+                            render();
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        const originalText = editor.value;
+                        editor.value = "Error: Please drop a valid .md file.\n\n" + originalText;
+                        setTimeout(() => { editor.value = originalText; }, 2000);
+                    }
+                }
+            });
+
+            // Theme handling
+            const themeClasses = [
+                'theme-open-sans-serif',
+                'theme-github',
+                'theme-newspaper',
+                'theme-solarized-light'
+            ];
+            function applyTheme(theme) {
+                preview.classList.remove(...themeClasses);
+                switch (theme) {
+                    case 'open-sans-serif':
+                        preview.classList.add('theme-open-sans-serif'); break;
+                    case 'github':
+                        preview.classList.add('theme-github'); break;
+                    case 'newspaper':
+                        preview.classList.add('theme-newspaper'); break;
+                    case 'solarized-light':
+                        preview.classList.add('theme-solarized-light'); break;
+                    default:
+                        // classic: no extra class
+                        break;
+                }
+            }
+            // Persist and apply theme selection
+            const savedTheme = localStorage.getItem('mdTheme') || 'classic';
+            styleSelect.value = savedTheme;
+            applyTheme(savedTheme);
+            styleSelect.addEventListener('change', (e) => {
+                const theme = e.target.value;
+                applyTheme(theme);
+                localStorage.setItem('mdTheme', theme);
+            });
+
+            // Initial render on page load
+            render();
+        });
+    </script>
+</body>
+</html>
+
