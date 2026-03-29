@@ -35,13 +35,28 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 3. Uploads the static repository content as the Pages artifact
+      # 3. Builds a clean publish directory containing only site files
+      - name: Prepare publish dir
+        run: |
+          rm -rf site
+          mkdir -p site
+          rsync -av --delete \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '.claude/' \
+            --exclude 'node_modules/' \
+            --exclude 'site/' \
+            --exclude '.DS_Store' \
+            --exclude '*.log' \
+            ./ site/
+
+      # 4. Uploads only the publish directory as the Pages artifact
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'site'
 
-      # 4. Deploys the artifact to GitHub Pages
+      # 5. Deploys the artifact to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
