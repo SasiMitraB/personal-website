@@ -17,6 +17,7 @@
     {% block head %}{% endblock %}
 </head>
 <body>
+    <canvas id="fluid-canvas"></canvas>
     <div class="wrapper">
         <header class="site-header">
             <h1>Sasi Mitra</h1>
@@ -51,6 +52,9 @@
             <p>&copy; <span id="year"></span> Sasi Mitra.</p>
         </footer>
     </div>
+
+    {# Fluid simulation background #}
+    <script src="{{ '/js/fluid-sim.js' | url }}"></script>
 
     {# A tiny script to automatically update the year in the footer #}
     <script>

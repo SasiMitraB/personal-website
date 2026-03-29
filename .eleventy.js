@@ -4,6 +4,7 @@ module.exports = function(eleventyConfig) {
   // This is the magic line that copies our CSS file to the output.
   eleventyConfig.addPassthroughCopy("css");
   eleventyConfig.addPassthroughCopy("img");
+  eleventyConfig.addPassthroughCopy("js");
   eleventyConfig.addPassthroughCopy("apps");
 
   return {
