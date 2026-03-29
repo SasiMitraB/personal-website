@@ -33,32 +33,30 @@ class FluidSimulation {
     this.colorMax = [0, 255, 0, 1.0];      // RGBA for high density (bright neon green)
     this.glowColor = [0, 255, 0];           // RGB for glow effect
 
-    // Scroll interaction
-    this.lastScrollY = 0;
-    this.scrollVelocity = 0;
-    this.scrollInputAmount = 0;
-    this.setupScrollListener();
+    // Mouse interaction
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.lastMouseX = 0;
+    this.lastMouseY = 0;
+    this.setupMouseListener();
 
     // Animation
     this.isAnimating = true;
     this.animate();
   }
 
-  setupScrollListener() {
-    const throttleDelay = 16; // ~60fps
-    let lastTime = 0;
-    let scrollInputTimer = null;
+  setupMouseListener() {
+    document.addEventListener('mousemove', (e) => {
+      this.lastMouseX = this.mouseX;
+      this.lastMouseY = this.mouseY;
+      this.mouseX = e.clientX;
+      this.mouseY = e.clientY;
+    });
 
-    window.addEventListener('scroll', () => {
-      const now = Date.now();
-      const currentScrollY = window.scrollY || document.documentElement.scrollTop;
-
-      if (now - lastTime > throttleDelay) {
-        this.scrollVelocity = (currentScrollY - this.lastScrollY) / throttleDelay;
-        this.lastScrollY = currentScrollY;
-        this.scrollInputAmount = Math.abs(this.scrollVelocity) * 0.5;
-        lastTime = now;
-      }
+    // Reset mouse position when leaving window
+    document.addEventListener('mouseleave', () => {
+      this.mouseX = -1000;
+      this.mouseY = -1000;
     });
 
     // Add initial animation on startup
@@ -220,24 +218,29 @@ class FluidSimulation {
   }
 
   step() {
-    // Add scroll-based input
-    if (this.scrollInputAmount > 0) {
-      const centerX = this.cols / 2;
-      const centerY = this.rows / 2;
-      const radius = 15;
+    // Add mouse-based input
+    if (this.mouseX > 0 && this.mouseY > 0) {
+      // Convert mouse position to grid coordinates
+      const gridX = this.mouseX / this.gridSize;
+      const gridY = this.mouseY / this.gridSize;
 
-      for (let y = Math.max(0, centerY - radius); y < Math.min(this.rows, centerY + radius); y++) {
-        for (let x = Math.max(0, centerX - radius); x < Math.min(this.cols, centerX + radius); x++) {
-          const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+      // Calculate mouse velocity
+      const velX = (this.mouseX - this.lastMouseX) * 0.5;
+      const velY = (this.mouseY - this.lastMouseY) * 0.5;
+
+      // Add force around mouse position
+      const radius = 20;
+
+      for (let y = Math.max(0, gridY - radius); y < Math.min(this.rows, gridY + radius); y++) {
+        for (let x = Math.max(0, gridX - radius); x < Math.min(this.cols, gridX + radius); x++) {
+          const dist = Math.sqrt((x - gridX) ** 2 + (y - gridY) ** 2);
           if (dist < radius) {
-            const force = this.force * this.scrollInputAmount * (1 - dist / radius);
-            this.addDensity(x, y, force);
-            this.addVelocity(x, y, 0, Math.sign(this.scrollVelocity) * force * 0.5);
+            const strength = (1 - dist / radius);
+            this.addDensity(x, y, this.force * strength * 0.5);
+            this.addVelocity(x, y, velX * strength * 0.1, velY * strength * 0.1);
           }
         }
       }
-
-      this.scrollInputAmount *= 0.95; // Decay
     }
 
     // Velocity diffusion
