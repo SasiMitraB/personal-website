@@ -60,6 +60,36 @@ class FluidSimulation {
         lastTime = now;
       }
     });
+
+    // Add initial animation on startup
+    this.addInitialActivity();
+  }
+
+  addInitialActivity() {
+    // Add some initial bursts to make the fluid visible
+    const centerX = this.cols / 2;
+    const centerY = this.rows / 2;
+
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        const offsetX = (Math.random() - 0.5) * this.cols * 0.4;
+        const offsetY = (Math.random() - 0.5) * this.rows * 0.2;
+        const x = centerX + offsetX;
+        const y = centerY + offsetY;
+        const force = this.force * 0.8;
+
+        // Add density in a small region
+        for (let dy = -10; dy <= 10; dy++) {
+          for (let dx = -10; dx <= 10; dx++) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 10) {
+              this.addDensity(x + dx, y + dy, force * (1 - dist / 10));
+              this.addVelocity(x + dx, y + dy, dx * 0.5, dy * 0.5);
+            }
+          }
+        }
+      }, i * 600);
+    }
   }
 
   getIndex(x, y) {
@@ -239,9 +269,9 @@ class FluidSimulation {
 
     // Clear background
     for (let i = 0; i < data.length; i += 4) {
-      data[i] = 30;      // R: dark background
-      data[i + 1] = 30;  // G
-      data[i + 2] = 30;  // B
+      data[i] = 15;      // R: very dark background
+      data[i + 1] = 15;  // G
+      data[i + 2] = 15;  // B
       data[i + 3] = 255; // A
     }
 
@@ -251,27 +281,28 @@ class FluidSimulation {
         const idx = this.getIndex(x, y);
         const density = Math.min(1, this.density[idx]);
 
-        // Map density to brightness
-        const brightness = Math.sqrt(density); // Non-linear for better visuals
+        if (density > 0.01) {
+          // Map density to brightness with more aggressive curve
+          const brightness = density * density; // Squared for more contrast
 
-        // Create glow effect
-        for (let dy = -1; dy <= 1; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            for (let py = 0; py < this.gridSize; py++) {
-              for (let px = 0; px < this.gridSize; px++) {
-                const px_canvas = x * this.gridSize + px;
-                const py_canvas = y * this.gridSize + py;
+          // Paint the grid cell
+          for (let py = 0; py < this.gridSize; py++) {
+            for (let px = 0; px < this.gridSize; px++) {
+              const px_canvas = x * this.gridSize + px;
+              const py_canvas = y * this.gridSize + py;
 
-                if (px_canvas < this.width && py_canvas < this.height) {
-                  const pixelIdx = (py_canvas * this.width + px_canvas) * 4;
+              if (px_canvas < this.width && py_canvas < this.height) {
+                const pixelIdx = (py_canvas * this.width + px_canvas) * 4;
 
-                  // Blend with existing color
-                  const glowFactor = brightness * 0.8;
-                  data[pixelIdx] = Math.max(data[pixelIdx], glowFactor * 50);    // R
-                  data[pixelIdx + 1] = Math.max(data[pixelIdx + 1], glowFactor * 255); // G (neon green)
-                  data[pixelIdx + 2] = Math.max(data[pixelIdx + 2], glowFactor * 50); // B
-                  data[pixelIdx + 3] = 255; // A
-                }
+                // Render with bright neon green
+                const greenValue = 50 + brightness * 205; // Green from 50 to 255
+                const redValue = brightness * 100;         // Red glow
+                const blueValue = brightness * 50;         // Slight blue
+
+                data[pixelIdx] = Math.max(data[pixelIdx], redValue);
+                data[pixelIdx + 1] = Math.max(data[pixelIdx + 1], greenValue);
+                data[pixelIdx + 2] = Math.max(data[pixelIdx + 2], blueValue);
+                data[pixelIdx + 3] = 255;
               }
             }
           }
