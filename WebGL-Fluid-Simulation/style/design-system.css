@@ -2,25 +2,26 @@
 
 :root {
     /* Color Palette */
-    --bg-base: #030811;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #38bdf8;
-    --accent-light: #7dd3fc;
-    --accent-dark: #0284c7;
-    --panel-bg: rgba(15, 23, 42, 0.45);
-    --panel-border: rgba(255, 255, 255, 0.08);
-    --panel-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    --bg-base: #1a1512;
+    --text-main: #f5f3f0;
+    --text-muted: #a8a29e;
+    --accent: #d97757;
+    --accent-light: #e8886a;
+    --accent-dark: #c16445;
+    --panel-bg: #252220;
+    --panel-border: #3f3935;
+    --panel-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
     --error: #ff6b6b;
     --success: #4ade80;
     --warning: #facc15;
     --info: #3b82f6;
 
     /* Effects */
-    --blur: blur(16px);
+    --blur: none;
 
     /* Typography */
     --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-serif: 'Crimson Text', serif;
     --font-mono: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
 
     /* Spacing */
@@ -71,6 +72,7 @@ h1 {
     letter-spacing: -0.03em;
     line-height: 1.1;
     margin-bottom: var(--spacing-md);
+    font-family: var(--font-serif);
 }
 
 h2 {
@@ -79,6 +81,7 @@ h2 {
     letter-spacing: -0.02em;
     line-height: 1.2;
     margin-bottom: var(--spacing-md);
+    font-family: var(--font-serif);
 }
 
 h3 {
@@ -87,11 +90,13 @@ h3 {
     letter-spacing: -0.01em;
     line-height: 1.3;
     margin-bottom: var(--spacing-sm);
+    font-family: var(--font-serif);
 }
 
 h4, h5, h6 {
     font-weight: 600;
     margin-bottom: var(--spacing-sm);
+    font-family: var(--font-serif);
 }
 
 p {
@@ -111,10 +116,10 @@ a:hover {
 }
 
 code {
-    background: rgba(56, 189, 248, 0.1);
+    background: rgba(217, 119, 87, 0.1);
     color: var(--accent);
     padding: 0.2em 0.4em;
-    border-radius: var(--radius-sm);
+    border-radius: 0;
     font-family: var(--font-mono);
     font-size: 0.9em;
 }
@@ -122,7 +127,7 @@ code {
 pre {
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
-    border-radius: var(--radius-lg);
+    border-radius: 0;
     padding: var(--spacing-lg);
     overflow-x: auto;
     margin-bottom: var(--spacing-md);
@@ -137,10 +142,8 @@ pre code {
 /* Glass Panel Component */
 .panel {
     background: var(--panel-bg);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
     border: 1px solid var(--panel-border);
-    border-radius: var(--radius-2xl);
+    border-radius: 0;
     padding: var(--spacing-xl);
     box-shadow: var(--panel-shadow);
     transition: var(--transition);
@@ -165,8 +168,8 @@ pre code {
     align-items: center;
     justify-content: center;
     padding: 0.85rem 1.75rem;
-    border-radius: var(--radius-full);
-    border: none;
+    border-radius: 0;
+    border: 1px solid transparent;
     font-weight: 600;
     font-size: 0.95rem;
     cursor: pointer;
@@ -184,7 +187,7 @@ pre code {
 .button-primary:hover {
     background: var(--accent-light);
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 10px 30px rgba(217, 119, 87, 0.2);
 }
 
 .button-secondary {
@@ -195,7 +198,7 @@ pre code {
 
 .button-secondary:hover {
     border-color: var(--accent);
-    background: rgba(56, 189, 248, 0.1);
+    background: rgba(217, 119, 87, 0.1);
     transform: translateY(-2px);
 }
 
@@ -222,7 +225,7 @@ select {
     border: 1px solid var(--panel-border);
     color: var(--text-main);
     padding: 0.75rem 1rem;
-    border-radius: var(--radius-md);
+    border-radius: 0;
     font-family: 'Inter', var(--font-stack);
     transition: var(--transition);
     font-size: 0.95rem;

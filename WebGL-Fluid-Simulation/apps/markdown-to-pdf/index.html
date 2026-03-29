@@ -32,8 +32,6 @@
             align-items: center;
             padding: 1rem 2rem;
             background: var(--panel-bg);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
             border-bottom: 1px solid var(--panel-border);
             flex-shrink: 0;
             gap: 2rem;
@@ -64,7 +62,7 @@
 
         .back-button:hover {
             color: var(--accent);
-            background: rgba(56, 189, 248, 0.1);
+            background: rgba(217, 119, 87, 0.1);
         }
 
         header h1 {
@@ -83,10 +81,10 @@
 
         .export-btn {
             padding: 0.6rem 1.5rem;
-            background: linear-gradient(135deg, var(--accent), #6366f1);
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 0;
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
@@ -96,7 +94,7 @@
 
         .export-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(56, 189, 248, 0.3);
+            box-shadow: 0 8px 16px rgba(217, 119, 87, 0.3);
         }
 
         /* Main content */
@@ -220,7 +218,7 @@
         #preview pre {
             background: var(--panel-bg);
             border: 1px solid var(--panel-border);
-            border-radius: 8px;
+            border-radius: 0;
             padding: 1.5em;
             overflow-x: auto;
             margin: 1em 0;
@@ -258,7 +256,7 @@
             border-collapse: collapse;
             margin: 1em 0;
             border: 1px solid var(--panel-border);
-            border-radius: 8px;
+            border-radius: 0;
             overflow: hidden;
         }
 
@@ -294,9 +292,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(3, 8, 17, 0.85);
+            background: rgba(26, 21, 18, 0.9);
             border: 3px dashed var(--accent);
-            border-radius: 8px;
+            border-radius: 0;
             color: var(--accent);
             font-size: 1.25rem;
             font-weight: 600;
