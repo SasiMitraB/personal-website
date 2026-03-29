@@ -69,7 +69,7 @@ const canvas = document.getElementById('fluid-canvas') || document.getElementsBy
 resizeCanvas();
 
 let config = {
-    SIM_RESOLUTION: 128,
+    SIM_RESOLUTION: 32,
     DYE_RESOLUTION: 1024,
     CAPTURE_RESOLUTION: 512,
     DENSITY_DISSIPATION: 0.001,
