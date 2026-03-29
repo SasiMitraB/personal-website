@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BibTeX Merge Machine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../style/design-system.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg) var(--spacing-xl);
+            background: var(--panel-bg);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--panel-border);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        header .logo {
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        header .logo span {
+            color: var(--accent);
+        }
+
+        header .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        header .back-button:hover {
+            color: var(--accent);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: var(--spacing-xl);
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-2xl);
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .app-header h1 {
+            margin-bottom: var(--spacing-md);
+            color: var(--text-main);
+        }
+
+        .app-header p {
+            font-size: 0.95rem;
+            max-width: 600px;
+            margin: var(--spacing-sm) auto;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-lg);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .section-title code {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+        }
+
+        .section-description {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .file-drop-zone {
+            border: 2px dashed var(--panel-border);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: transparent;
+        }
+
+        .file-drop-zone:hover {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .file-drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.1);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+
+        .file-drop-zone svg {
+            width: 3rem;
+            height: 3rem;
+            margin: 0 auto var(--spacing-md) auto;
+            opacity: 0.5;
+        }
+
+        .file-drop-zone p {
+            margin: var(--spacing-sm) 0;
+        }
+
+        .file-drop-zone .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .file-drop-zone .note {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius-md);
+            transition: var(--transition);
+        }
+
+        .file-item:hover {
+            border-color: var(--accent);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .file-item .name {
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .file-item .size {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .action-section {
+            display: flex;
+            justify-content: center;
+            gap: var(--spacing-lg);
+            margin: var(--spacing-lg) 0;
+        }
+
+        .results-section {
+            margin-top: var(--spacing-2xl);
+        }
+
+        .action-section .button {
+            min-width: 200px;
+        }
+
+        footer {
+            text-align: center;
+            padding: var(--spacing-2xl) var(--spacing-lg);
+            border-top: 1px dashed var(--panel-border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: auto;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: var(--spacing-md);
+            }
+
+            main {
+                padding: var(--spacing-lg);
+            }
+
+            .action-section {
+                flex-direction: column;
+            }
+
+            .action-section .button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="../../" class="back-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to Home
+        </a>
+        <a href="../../" class="logo">Sasi <span>Mitra</span></a>
+        <div style="width: 120px;"></div>
+    </header>
+
+    <main>
+        <div class="app-container">
+            <div class="app-header">
+                <h1>BibTeX Merge Machine</h1>
+                <p class="section-description">> Merge multiple .bib files based on your LaTeX citations</p>
+                <p>Suppose you've got multiple .bib files in your LaTeX project, and you're looking to generate a single consolidated bib file with all your references, this tool is for you.</p>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">
+                    <span>Step 1:</span> Upload <code>.aux</code> file
+                </h3>
+                <p class="section-description">This tells us which citations you used. In Overleaf, click the document button next to file download, then find "Other logs and files". Download the .aux file from there.</p>
+                <div id="aux-file-zone" class="file-drop-zone">
+                    <input type="file" id="aux-file-input" accept=".aux">
+                    <div id="aux-placeholder">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Drag & drop or <span class="highlight">select file</span></p>
+                        <p class="note">.AUX file only</p>
+                    </div>
+                    <div id="aux-file-display" class="file-list hidden"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">
+                    <span>Step 2:</span> Upload all <code>.bib</code> files
+                </h3>
+                <p class="section-description">All your reference files. You can upload multiple .bib files at once.</p>
+                <div id="bib-files-zone" class="file-drop-zone">
+                    <input type="file" id="bib-files-input" accept=".bib" multiple>
+                    <div id="bib-placeholder">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <p>Drag & drop or <span class="highlight">select files</span></p>
+                        <p class="note">Multiple .BIB files supported</p>
+                    </div>
+                    <div id="bib-files-display" class="file-list hidden"></div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <button id="submit-btn" class="button button-primary">Generate Master File</button>
+            </div>
+
+            <div id="results-section" class="results-section hidden">
+                <div id="status-message"></div>
+                <div class="action-section">
+                    <a id="download-btn" class="button button-secondary hidden">Download Master.bib</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>All processing happens in your browser. No files are uploaded to any server.</p>
+    </footer>
+
+    <script>
+        const auxFileZone = document.getElementById('aux-file-zone');
+        const auxFileInput = document.getElementById('aux-file-input');
+        const auxPlaceholder = document.getElementById('aux-placeholder');
+        const auxFileDisplay = document.getElementById('aux-file-display');
+
+        const bibFilesZone = document.getElementById('bib-files-zone');
+        const bibFilesInput = document.getElementById('bib-files-input');
+        const bibPlaceholder = document.getElementById('bib-placeholder');
+        const bibFilesDisplay = document.getElementById('bib-files-display');
+
+        const submitBtn = document.getElementById('submit-btn');
+        const resultsSection = document.getElementById('results-section');
+        const statusMessage = document.getElementById('status-message');
+        const downloadBtn = document.getElementById('download-btn');
+
+        let auxFile = null;
+        let bibFiles = [];
+
+        // File reading
+        function readFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error);
+                reader.readAsText(file);
+            });
+        }
+
+        // File display
+        function displayAuxFile() {
+            auxPlaceholder.classList.add('hidden');
+            auxFileDisplay.classList.remove('hidden');
+            auxFileDisplay.innerHTML = `<div class="file-item"><span class="name">${auxFile.name}</span><span class="size">${(auxFile.size / 1024).toFixed(2)} KB</span></div>`;
+        }
+
+        function displayBibFiles() {
+            if (bibFiles.length > 0) {
+                bibPlaceholder.classList.add('hidden');
+                bibFilesDisplay.classList.remove('hidden');
+                bibFilesDisplay.innerHTML = bibFiles.map(file =>
+                    `<div class="file-item"><span class="name">${file.name}</span><span class="size">${(file.size / 1024).toFixed(2)} KB</span></div>`
+                ).join('');
+            } else {
+                bibPlaceholder.classList.remove('hidden');
+                bibFilesDisplay.classList.add('hidden');
+            }
+        }
+
+        // Drag and drop setup
+        function setupDropZone(zone, input, isMultiple, callback) {
+            zone.addEventListener('click', () => input.click());
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+
+            input.addEventListener('change', (e) => {
+                if (isMultiple) {
+                    callback([...e.target.files]);
+                } else {
+                    callback(e.target.files[0]);
+                }
+            });
+        }
+
+        setupDropZone(auxFileZone, auxFileInput, false, (file) => {
+            if (file) { auxFile = file; displayAuxFile(); }
+        });
+
+        setupDropZone(bibFilesZone, bibFilesInput, true, (files) => {
+            if (files && files.length > 0) { bibFiles = files; displayBibFiles(); }
+        });
+
+        // Parsing logic
+        function parseAuxCitations(content) {
+            const citationRegex = /\\citation\{([^}]+)\}/g;
+            const citedKeys = new Set();
+            let match;
+            while ((match = citationRegex.exec(content)) !== null) {
+                match[1].split(',').forEach(key => {
+                    if (key.trim()) citedKeys.add(key.trim());
+                });
+            }
+            return citedKeys;
+        }
+
+        function parseBibEntries(content) {
+            const entries = new Map();
+            const entryRegex = /@\w+\s*\{([^,]+),/g;
+            let match;
+            while((match = entryRegex.exec(content)) !== null) {
+                const key = match[1].trim();
+                const startIndex = match.index;
+                let braceCount = 0;
+                let currentIndex = content.indexOf('{', startIndex) + 1;
+                for (let i = currentIndex; i < content.length; i++) {
+                    if (content[i] === '{') braceCount++;
+                    else if (content[i] === '}') {
+                        if (braceCount === 0) {
+                            entries.set(key, content.substring(startIndex, i + 1));
+                            break;
+                        }
+                        braceCount--;
+                    }
+                }
+            }
+            return entries;
+        }
+
+        // Status messages
+        function showStatus(message, type = 'info') {
+            resultsSection.classList.remove('hidden');
+            statusMessage.innerHTML = message;
+            statusMessage.className = `status-message status-${type}`;
+        }
+
+        // Main processing
+        async function processBibFiles() {
+            if (!auxFile) {
+                showStatus("Please upload an .aux file", 'error');
+                return;
+            }
+            if (bibFiles.length === 0) {
+                showStatus("Please upload at least one .bib file", 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            showStatus("Reading files...", 'info');
+
+            try {
+                const auxContent = await readFile(auxFile);
+                const citedKeys = parseAuxCitations(auxContent);
+                showStatus(`Found ${citedKeys.size} citations. Checking .bib files...`, 'info');
+
+                if (citedKeys.size === 0) {
+                    showStatus("No citations found in .aux file. The master file would be empty.", 'warning');
+                    downloadBtn.classList.add('hidden');
+                    return;
+                }
+
+                const allBibEntries = new Map();
+                for (const file of bibFiles) {
+                    const bibContent = await readFile(file);
+                    const entries = parseBibEntries(bibContent);
+                    for (const [key, value] of entries) {
+                        if (!allBibEntries.has(key)) allBibEntries.set(key, value);
+                    }
+                }
+                showStatus(`Parsed ${allBibEntries.size} total entries...`, 'info');
+
+                const masterBibParts = [];
+                const missingKeys = new Set();
+                for (const key of citedKeys) {
+                    if (allBibEntries.has(key)) {
+                        masterBibParts.push(allBibEntries.get(key));
+                    } else {
+                        missingKeys.add(key);
+                    }
+                }
+
+                const masterBibContent = masterBibParts.join('\n\n');
+                let message = `✓ Master file ready with ${masterBibParts.length} entries`;
+
+                if (missingKeys.size > 0) {
+                    message += `<br><br>⚠ Warning: ${missingKeys.size} citations not found in .bib files:<br><code>${[...missingKeys].join(', ')}</code>`;
+                    showStatus(message, 'warning');
+                } else {
+                    showStatus(message, 'success');
+                }
+
+                // Setup download
+                const blob = new Blob([masterBibContent], { type: 'application/x-bibtex;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                downloadBtn.href = url;
+                downloadBtn.download = 'master_references.bib';
+                downloadBtn.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Error:", error);
+                showStatus(`Error: ${error.message}`, 'error');
+                downloadBtn.classList.add('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Generate Master File';
+            }
+        }
+
+        submitBtn.addEventListener('click', processBibFiles);
+    </script>
+</body>
+</html>
