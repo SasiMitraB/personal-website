@@ -112,17 +112,17 @@ if (isBackgroundMode) {
     config.VELOCITY_DISSIPATION = 0.28;
     config.MAGNETIC_DISSIPATION = 0.01;
     config.MAGNETIC_STRETCH = 0.25;
-    config.MAGNETIC_FORCE = 0.2;
-    config.MAGNETIC_SEED_STRENGTH = 250;
+    config.MAGNETIC_FORCE = 0.5;
+    config.MAGNETIC_SEED_STRENGTH = 300;
     config.SPLAT_FORCE = 5200;
     config.SPLAT_RADIUS = 0.26;
     config.BLOOM = true;
     config.BLOOM_INTENSITY = 0.65;
     config.BLOOM_THRESHOLD = 0.55;
-    config.SUNRAYS = false;
+    config.SUNRAYS = true;
     config.BACK_COLOR = { r: 7, g: 19, b: 32 };
-    config.SUPERNOVA_RATE = 4.0;
-    config.SUPERNOVA_FORCE = 700;
+    config.SUPERNOVA_RATE = 1.0;
+    config.SUPERNOVA_FORCE = 1000;
     config.SUPERNOVA_DYE = 2.2;
     config.SUPERNOVA_SEPARATION = 0.035;
 }
