@@ -99,10 +99,6 @@ let config = {
     MAGNETIC_DIFFUSIVITY: 0.2,
     MAGNETIC_VISUALIZATION: 0.14,
     MAGNETIC_INJECTION: 0.35,
-    TURBULENCE_DRIVING: false,
-    DRIVING_RATE: 1.4,
-    DRIVING_STRENGTH: 1400,
-    DRIVING_RADIUS: 0.09,
 }
 
 if (isBackgroundMode) {
@@ -125,10 +121,6 @@ if (isBackgroundMode) {
     config.MAGNETIC_DIFFUSIVITY = 0.55;
     config.MAGNETIC_VISUALIZATION = 0.18;
     config.MAGNETIC_INJECTION = 0.4;
-    config.TURBULENCE_DRIVING = true;
-    config.DRIVING_RATE = 5;
-    config.DRIVING_STRENGTH = 1000;
-    config.DRIVING_RADIUS = 0.1;
 }
 
 const backgroundPointers = new Map();
@@ -290,12 +282,6 @@ function startGUI () {
     magneticFolder.add(config, 'MAGNETIC_DIFFUSIVITY', 0.0, 2.0).name('diffusivity');
     magneticFolder.add(config, 'MAGNETIC_VISUALIZATION', 0.0, 1.0).name('field glow');
     magneticFolder.add(config, 'MAGNETIC_INJECTION', 0.0, 1.0).name('injection');
-
-    let drivingFolder = gui.addFolder('Turbulence Driving');
-    drivingFolder.add(config, 'TURBULENCE_DRIVING').name('enabled');
-    drivingFolder.add(config, 'DRIVING_RATE', 0.0, 6.0).name('events/sec');
-    drivingFolder.add(config, 'DRIVING_STRENGTH', 100.0, 4000.0).name('burst strength');
-    drivingFolder.add(config, 'DRIVING_RADIUS', 0.02, 0.22).name('burst radius');
 
     let captureFolder = gui.addFolder('Capture');
     captureFolder.addColor(config, 'BACK_COLOR').name('background color');
@@ -1384,56 +1370,11 @@ function update () {
     if (resizeCanvas())
         initFramebuffers();
     updateColors(dt);
-    driveSupernovaTurbulence(dt);
     applyInputs();
     if (!config.PAUSED)
         step(dt);
     render(null);
     requestAnimationFrame(update);
-}
-
-function driveSupernovaTurbulence (dt) {
-    if (!config.TURBULENCE_DRIVING || config.PAUSED || config.DRIVING_RATE <= 0)
-        return;
-
-    // Poisson-like random forcing approximates stochastic supernova driving.
-    const expectedEvents = config.DRIVING_RATE * dt;
-    let eventCount = Math.floor(expectedEvents);
-    if (Math.random() < expectedEvents - eventCount)
-        eventCount += 1;
-    eventCount = Math.min(eventCount, 3);
-
-    for (let i = 0; i < eventCount; i++)
-        injectSupernovaBurst();
-}
-
-function injectSupernovaBurst () {
-    const centerX = 0.12 + Math.random() * 0.76;
-    const centerY = 0.12 + Math.random() * 0.76;
-    const shellCount = 6 + Math.floor(Math.random() * 6);
-    const baseAngle = Math.random() * Math.PI * 2;
-    const burstStrength = config.DRIVING_STRENGTH * (0.75 + Math.random() * 0.65);
-
-    for (let i = 0; i < shellCount; i++) {
-        const angle = baseAngle + (i / shellCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
-        const radius = config.DRIVING_RADIUS * (0.4 + Math.random() * 0.9);
-
-        const x = clamp01(centerX + Math.cos(angle) * radius);
-        const y = clamp01(centerY + Math.sin(angle) * radius);
-
-        const tangentialSign = i % 2 === 0 ? 1 : -1;
-        const tangentialSpeed = burstStrength * (0.5 + Math.random() * 0.6) * tangentialSign;
-        const radialSpeed = burstStrength * 0.3 * (Math.random() - 0.5);
-
-        const dx = Math.cos(angle + Math.PI * 0.5) * tangentialSpeed + Math.cos(angle) * radialSpeed;
-        const dy = Math.sin(angle + Math.PI * 0.5) * tangentialSpeed + Math.sin(angle) * radialSpeed;
-
-        const color = generateColor();
-        color.r *= 10.0;
-        color.g *= 10.0;
-        color.b *= 10.0;
-        splat(x, y, dx, dy, color);
-    }
 }
 
 function calcDeltaTime () {
