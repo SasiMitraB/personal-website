@@ -99,7 +99,7 @@ let config = {
     MAGNETIC_DIFFUSIVITY: 0.2,
     MAGNETIC_VISUALIZATION: 0.14,
     MAGNETIC_INJECTION: 0.35,
-    TURBULENCE_DRIVING: true,
+    TURBULENCE_DRIVING: false,
     DRIVING_RATE: 1.4,
     DRIVING_STRENGTH: 1400,
     DRIVING_RADIUS: 0.09,
@@ -126,8 +126,8 @@ if (isBackgroundMode) {
     config.MAGNETIC_VISUALIZATION = 0.18;
     config.MAGNETIC_INJECTION = 0.4;
     config.TURBULENCE_DRIVING = true;
-    config.DRIVING_RATE = 1.9;
-    config.DRIVING_STRENGTH = 1500;
+    config.DRIVING_RATE = 5;
+    config.DRIVING_STRENGTH = 1000;
     config.DRIVING_RADIUS = 0.1;
 }
 
