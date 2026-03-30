@@ -69,45 +69,66 @@ const canvas = document.getElementById('fluid-canvas') || document.getElementsBy
 resizeCanvas();
 
 let config = {
-    SIM_RESOLUTION: 32,
+    SIM_RESOLUTION: 64,
     DYE_RESOLUTION: 1024,
     CAPTURE_RESOLUTION: 512,
-    DENSITY_DISSIPATION: 0.001,
-    VELOCITY_DISSIPATION: 0.2,
+    DENSITY_DISSIPATION: 0.0001,
+    VELOCITY_DISSIPATION: 0.02,
     PRESSURE: 0.8,
-    PRESSURE_ITERATIONS: 20,
-    CURL: 30,
-    SPLAT_RADIUS: 0.25,
-    SPLAT_FORCE: 6000,
+    PRESSURE_ITERATIONS: 40,
+    CURL: 50,
+    SPLAT_RADIUS: 0.6,
+    SPLAT_FORCE: 2000,
     SHADING: true,
     COLORFUL: true,
-    COLOR_UPDATE_SPEED: 10,
+    COLOR_UPDATE_SPEED: 0.5,
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
     TRANSPARENT: false,
     BLOOM: true,
-    BLOOM_ITERATIONS: 8,
-    BLOOM_RESOLUTION: 256,
-    BLOOM_INTENSITY: 0.8,
-    BLOOM_THRESHOLD: 0.6,
-    BLOOM_SOFT_KNEE: 0.7,
-    SUNRAYS: true,
+    BLOOM_ITERATIONS: 12,
+    BLOOM_RESOLUTION: 512,
+    BLOOM_INTENSITY: 1.8,
+    BLOOM_THRESHOLD: 0.2,
+    BLOOM_SOFT_KNEE: 0.8,
+    SUNRAYS: false,
     SUNRAYS_RESOLUTION: 196,
     SUNRAYS_WEIGHT: 1.0,
+    ENABLE_MHD: true,
+    LORENTZ_SCALE: 0.4,
+    MAGNETIC_DIFFUSIVITY: 0.2,
+    MAGNETIC_VISUALIZATION: 0.14,
+    MAGNETIC_INJECTION: 0.35,
+    TURBULENCE_DRIVING: true,
+    DRIVING_RATE: 1.4,
+    DRIVING_STRENGTH: 1400,
+    DRIVING_RADIUS: 0.09,
 }
 
 if (isBackgroundMode) {
     config.DYE_RESOLUTION = 1024;
-    config.SIM_RESOLUTION = 96;
-    config.DENSITY_DISSIPATION = 0.92;
-    config.VELOCITY_DISSIPATION = 0.28;
-    config.SPLAT_FORCE = 5200;
-    config.SPLAT_RADIUS = 0.26;
+    config.SIM_RESOLUTION = 128;
+    config.DENSITY_DISSIPATION = 0.00008;
+    config.VELOCITY_DISSIPATION = 0.018;
+    config.PRESSURE_ITERATIONS = 45;
+    config.SPLAT_FORCE = 1800;
+    config.SPLAT_RADIUS = 0.7;
     config.BLOOM = true;
-    config.BLOOM_INTENSITY = 0.65;
-    config.BLOOM_THRESHOLD = 0.55;
+    config.BLOOM_INTENSITY = 2.0;
+    config.BLOOM_THRESHOLD = 0.18;
+    config.BLOOM_SOFT_KNEE = 0.85;
+    config.COLOR_UPDATE_SPEED = 0.35;
     config.SUNRAYS = false;
-    config.BACK_COLOR = { r: 7, g: 19, b: 32 };
+    config.BACK_COLOR = { r: 0, g: 0, b: 0 };
+    config.ENABLE_MHD = true;
+    config.LORENTZ_SCALE = 0.08;
+    config.MAGNETIC_DIFFUSIVITY = 0.55;
+    config.MAGNETIC_VISUALIZATION = 0.18;
+    config.MAGNETIC_INJECTION = 0.4;
+    config.TURBULENCE_DRIVING = true;
+    config.DRIVING_RATE = 1.9;
+    config.DRIVING_STRENGTH = 1500;
+    config.DRIVING_RADIUS = 0.1;
 }
 
 const backgroundPointers = new Map();
@@ -259,6 +280,22 @@ function startGUI () {
     let sunraysFolder = gui.addFolder('Sunrays');
     sunraysFolder.add(config, 'SUNRAYS').name('enabled').onFinishChange(updateKeywords);
     sunraysFolder.add(config, 'SUNRAYS_WEIGHT', 0.3, 1.0).name('weight');
+
+    let magneticFolder = gui.addFolder('Magnetic');
+    magneticFolder.add(config, 'ENABLE_MHD').name('enabled').onFinishChange(() => {
+        updateKeywords();
+        initFramebuffers();
+    });
+    magneticFolder.add(config, 'LORENTZ_SCALE', 0.0, 0.5).name('lorentz scale');
+    magneticFolder.add(config, 'MAGNETIC_DIFFUSIVITY', 0.0, 2.0).name('diffusivity');
+    magneticFolder.add(config, 'MAGNETIC_VISUALIZATION', 0.0, 1.0).name('field glow');
+    magneticFolder.add(config, 'MAGNETIC_INJECTION', 0.0, 1.0).name('injection');
+
+    let drivingFolder = gui.addFolder('Turbulence Driving');
+    drivingFolder.add(config, 'TURBULENCE_DRIVING').name('enabled');
+    drivingFolder.add(config, 'DRIVING_RATE', 0.0, 6.0).name('events/sec');
+    drivingFolder.add(config, 'DRIVING_STRENGTH', 100.0, 4000.0).name('burst strength');
+    drivingFolder.add(config, 'DRIVING_RADIUS', 0.02, 0.22).name('burst radius');
 
     let captureFolder = gui.addFolder('Capture');
     captureFolder.addColor(config, 'BACK_COLOR').name('background color');
@@ -588,12 +625,18 @@ const displayShaderSource = `
     uniform sampler2D uBloom;
     uniform sampler2D uSunrays;
     uniform sampler2D uDithering;
+    uniform sampler2D uMagneticPotential;
     uniform vec2 ditherScale;
     uniform vec2 texelSize;
+    uniform float magneticVisualStrength;
 
     vec3 linearToGamma (vec3 color) {
         color = max(color, vec3(0));
         return max(1.055 * pow(color, vec3(0.416666667)) - 0.055, vec3(0));
+    }
+
+    vec2 wrapUv (vec2 uv) {
+        return fract(uv + 1.0);
     }
 
     void main () {
@@ -633,6 +676,23 @@ const displayShaderSource = `
         bloom += noise / 255.0;
         bloom = linearToGamma(bloom);
         c += bloom;
+    #endif
+
+    #ifdef MHD
+        float AzL = texture2D(uMagneticPotential, wrapUv(vL)).x;
+        float AzR = texture2D(uMagneticPotential, wrapUv(vR)).x;
+        float AzT = texture2D(uMagneticPotential, wrapUv(vT)).x;
+        float AzB = texture2D(uMagneticPotential, wrapUv(vB)).x;
+        float AzC = texture2D(uMagneticPotential, vUv).x;
+
+        float Bx = 0.5 * (AzT - AzB);
+        float By = -0.5 * (AzR - AzL);
+        float fieldStrength = length(vec2(Bx, By));
+        float currentSheet = abs(AzL + AzR + AzT + AzB - 4.0 * AzC);
+
+        vec3 fieldColor = vec3(0.2, 0.5, 1.0) * fieldStrength;
+        vec3 reconnectionColor = vec3(1.0, 0.35, 0.2) * currentSheet;
+        c += (fieldColor + reconnectionColor) * magneticVisualStrength;
     #endif
 
         float a = max(c.r, max(c.g, c.b));
@@ -960,6 +1020,84 @@ const gradientSubtractShader = compileShader(gl.FRAGMENT_SHADER, `
     }
 `);
 
+const inductionShader = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float;
+    precision highp sampler2D;
+
+    varying vec2 vUv;
+    varying vec2 vL;
+    varying vec2 vR;
+    varying vec2 vT;
+    varying vec2 vB;
+    uniform sampler2D uVelocity;
+    uniform sampler2D uMagneticPotential;
+    uniform vec2 texelSize;
+    uniform float magneticDiffusivity;
+    uniform float dt;
+
+    vec2 wrapUv (vec2 uv) {
+        return fract(uv + 1.0);
+    }
+
+    void main () {
+        float AzL = texture2D(uMagneticPotential, wrapUv(vL)).x;
+        float AzR = texture2D(uMagneticPotential, wrapUv(vR)).x;
+        float AzT = texture2D(uMagneticPotential, wrapUv(vT)).x;
+        float AzB = texture2D(uMagneticPotential, wrapUv(vB)).x;
+        float AzC = texture2D(uMagneticPotential, vUv).x;
+
+        vec2 vel = texture2D(uVelocity, vUv).xy;
+
+        float dAzdx = 0.5 * (AzR - AzL);
+        float dAzdy = 0.5 * (AzT - AzB);
+        float laplacian = AzL + AzR + AzT + AzB - 4.0 * AzC;
+
+        float advection = -(vel.x * dAzdx + vel.y * dAzdy);
+        float nextAz = AzC + (advection + magneticDiffusivity * laplacian) * dt;
+
+        nextAz = clamp(nextAz, -50.0, 50.0);
+        gl_FragColor = vec4(nextAz, 0.0, 0.0, 1.0);
+    }
+`);
+
+const lorentzShader = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float;
+    precision highp sampler2D;
+
+    varying vec2 vUv;
+    varying vec2 vL;
+    varying vec2 vR;
+    varying vec2 vT;
+    varying vec2 vB;
+    uniform sampler2D uVelocity;
+    uniform sampler2D uMagneticPotential;
+    uniform float lorentzScale;
+    uniform float dt;
+
+    vec2 wrapUv (vec2 uv) {
+        return fract(uv + 1.0);
+    }
+
+    void main () {
+        float AzL = texture2D(uMagneticPotential, wrapUv(vL)).x;
+        float AzR = texture2D(uMagneticPotential, wrapUv(vR)).x;
+        float AzT = texture2D(uMagneticPotential, wrapUv(vT)).x;
+        float AzB = texture2D(uMagneticPotential, wrapUv(vB)).x;
+        float AzC = texture2D(uMagneticPotential, vUv).x;
+
+        float Bx = 0.5 * (AzT - AzB);
+        float By = -0.5 * (AzR - AzL);
+        float Jz = -(AzL + AzR + AzT + AzB - 4.0 * AzC);
+
+        vec2 lorentzForce = Jz * vec2(-By, Bx) * lorentzScale;
+
+        vec2 vel = texture2D(uVelocity, vUv).xy;
+        vel += lorentzForce * dt;
+        vel = min(max(vel, -1000.0), 1000.0);
+        gl_FragColor = vec4(vel, 0.0, 1.0);
+    }
+`);
+
 const blit = (() => {
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
@@ -1000,6 +1138,7 @@ let velocity;
 let divergence;
 let curl;
 let pressure;
+let magneticPotential;
 let bloom;
 let bloomFramebuffers = [];
 let sunrays;
@@ -1024,6 +1163,8 @@ const curlProgram            = new Program(baseVertexShader, curlShader);
 const vorticityProgram       = new Program(baseVertexShader, vorticityShader);
 const pressureProgram        = new Program(baseVertexShader, pressureShader);
 const gradienSubtractProgram = new Program(baseVertexShader, gradientSubtractShader);
+const inductionProgram       = new Program(baseVertexShader, inductionShader);
+const lorentzProgram         = new Program(baseVertexShader, lorentzShader);
 
 const displayMaterial = new Material(baseVertexShader, displayShaderSource);
 
@@ -1048,6 +1189,16 @@ function initFramebuffers () {
         velocity = createDoubleFBO(simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
     else
         velocity = resizeDoubleFBO(velocity, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
+
+    if (config.ENABLE_MHD) {
+        if (magneticPotential == null)
+            magneticPotential = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, filtering);
+        else
+            magneticPotential = resizeDoubleFBO(magneticPotential, simRes.width, simRes.height, r.internalFormat, r.format, texType, filtering);
+    }
+    else {
+        magneticPotential = null;
+    }
 
     divergence = createFBO      (simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
     curl       = createFBO      (simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
@@ -1210,6 +1361,7 @@ function updateKeywords () {
     if (config.SHADING) displayKeywords.push("SHADING");
     if (config.BLOOM) displayKeywords.push("BLOOM");
     if (config.SUNRAYS) displayKeywords.push("SUNRAYS");
+    if (config.ENABLE_MHD) displayKeywords.push("MHD");
     displayMaterial.setKeywords(displayKeywords);
 }
 
@@ -1232,11 +1384,56 @@ function update () {
     if (resizeCanvas())
         initFramebuffers();
     updateColors(dt);
+    driveSupernovaTurbulence(dt);
     applyInputs();
     if (!config.PAUSED)
         step(dt);
     render(null);
     requestAnimationFrame(update);
+}
+
+function driveSupernovaTurbulence (dt) {
+    if (!config.TURBULENCE_DRIVING || config.PAUSED || config.DRIVING_RATE <= 0)
+        return;
+
+    // Poisson-like random forcing approximates stochastic supernova driving.
+    const expectedEvents = config.DRIVING_RATE * dt;
+    let eventCount = Math.floor(expectedEvents);
+    if (Math.random() < expectedEvents - eventCount)
+        eventCount += 1;
+    eventCount = Math.min(eventCount, 3);
+
+    for (let i = 0; i < eventCount; i++)
+        injectSupernovaBurst();
+}
+
+function injectSupernovaBurst () {
+    const centerX = 0.12 + Math.random() * 0.76;
+    const centerY = 0.12 + Math.random() * 0.76;
+    const shellCount = 6 + Math.floor(Math.random() * 6);
+    const baseAngle = Math.random() * Math.PI * 2;
+    const burstStrength = config.DRIVING_STRENGTH * (0.75 + Math.random() * 0.65);
+
+    for (let i = 0; i < shellCount; i++) {
+        const angle = baseAngle + (i / shellCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
+        const radius = config.DRIVING_RADIUS * (0.4 + Math.random() * 0.9);
+
+        const x = clamp01(centerX + Math.cos(angle) * radius);
+        const y = clamp01(centerY + Math.sin(angle) * radius);
+
+        const tangentialSign = i % 2 === 0 ? 1 : -1;
+        const tangentialSpeed = burstStrength * (0.5 + Math.random() * 0.6) * tangentialSign;
+        const radialSpeed = burstStrength * 0.3 * (Math.random() - 0.5);
+
+        const dx = Math.cos(angle + Math.PI * 0.5) * tangentialSpeed + Math.cos(angle) * radialSpeed;
+        const dy = Math.sin(angle + Math.PI * 0.5) * tangentialSpeed + Math.sin(angle) * radialSpeed;
+
+        const color = generateColor();
+        color.r *= 10.0;
+        color.g *= 10.0;
+        color.b *= 10.0;
+        splat(x, y, dx, dy, color);
+    }
 }
 
 function calcDeltaTime () {
@@ -1299,6 +1496,16 @@ function step (dt) {
     blit(velocity.write);
     velocity.swap();
 
+    if (config.ENABLE_MHD && magneticPotential != null) {
+        lorentzProgram.bind();
+        gl.uniform1i(lorentzProgram.uniforms.uMagneticPotential, magneticPotential.read.attach(0));
+        gl.uniform1i(lorentzProgram.uniforms.uVelocity, velocity.read.attach(1));
+        gl.uniform1f(lorentzProgram.uniforms.lorentzScale, config.LORENTZ_SCALE);
+        gl.uniform1f(lorentzProgram.uniforms.dt, dt);
+        blit(velocity.write);
+        velocity.swap();
+    }
+
     divergenceProgram.bind();
     gl.uniform2f(divergenceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
     gl.uniform1i(divergenceProgram.uniforms.uVelocity, velocity.read.attach(0));
@@ -1337,6 +1544,17 @@ function step (dt) {
     gl.uniform1f(advectionProgram.uniforms.dissipation, config.VELOCITY_DISSIPATION);
     blit(velocity.write);
     velocity.swap();
+
+    if (config.ENABLE_MHD && magneticPotential != null) {
+        inductionProgram.bind();
+        gl.uniform2f(inductionProgram.uniforms.texelSize, magneticPotential.texelSizeX, magneticPotential.texelSizeY);
+        gl.uniform1i(inductionProgram.uniforms.uVelocity, velocity.read.attach(0));
+        gl.uniform1i(inductionProgram.uniforms.uMagneticPotential, magneticPotential.read.attach(1));
+        gl.uniform1f(inductionProgram.uniforms.magneticDiffusivity, config.MAGNETIC_DIFFUSIVITY);
+        gl.uniform1f(inductionProgram.uniforms.dt, dt);
+        blit(magneticPotential.write);
+        magneticPotential.swap();
+    }
 
     if (!ext.supportLinearFiltering)
         gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
@@ -1390,6 +1608,10 @@ function drawDisplay (target) {
     if (config.SHADING)
         gl.uniform2f(displayMaterial.uniforms.texelSize, 1.0 / width, 1.0 / height);
     gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
+    if (config.ENABLE_MHD && magneticPotential != null) {
+        gl.uniform1i(displayMaterial.uniforms.uMagneticPotential, magneticPotential.read.attach(4));
+        gl.uniform1f(displayMaterial.uniforms.magneticVisualStrength, config.MAGNETIC_VISUALIZATION);
+    }
     if (config.BLOOM) {
         gl.uniform1i(displayMaterial.uniforms.uBloom, bloom.attach(1));
         gl.uniform1i(displayMaterial.uniforms.uDithering, ditheringTexture.attach(2));
@@ -1479,24 +1701,50 @@ function splatPointer (pointer) {
 }
 
 function multipleSplats (amount) {
+    const clusterCount = Math.max(3, Math.min(6, Math.floor(amount / 8) + 2));
+    const clusters = [];
+    for (let i = 0; i < clusterCount; i++) {
+        clusters.push({
+            x: 0.12 + Math.random() * 0.76,
+            y: 0.12 + Math.random() * 0.76
+        });
+    }
+
     for (let i = 0; i < amount; i++) {
+        const cluster = clusters[Math.floor(Math.random() * clusters.length)];
         const color = generateColor();
-        color.r *= 10.0;
-        color.g *= 10.0;
-        color.b *= 10.0;
-        const x = Math.random();
-        const y = Math.random();
-        const dx = 1000 * (Math.random() - 0.5);
-        const dy = 1000 * (Math.random() - 0.5);
+        color.r *= 8.0;
+        color.g *= 8.0;
+        color.b *= 8.0;
+
+        const spread = 0.12 + Math.random() * 0.12;
+        const x = clamp01(cluster.x + (Math.random() - 0.5) * spread);
+        const y = clamp01(cluster.y + (Math.random() - 0.5) * spread);
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 200 + Math.random() * 400;
+        const dx = Math.cos(angle) * speed;
+        const dy = Math.sin(angle) * speed;
         splat(x, y, dx, dy, color);
     }
 }
 
 function seedBackgroundFluid () {
-    const colorA = { r: 1.0, g: 1.7, b: 2.7 };
-    const colorB = { r: 0.8, g: 1.5, b: 2.4 };
-    splat(0.32, 0.55, 420, 0, colorA);
-    splat(0.68, 0.45, -420, 0, colorB);
+    multipleSplats(52);
+
+    const colorA = generateColor();
+    colorA.r *= 12.0;
+    colorA.g *= 12.0;
+    colorA.b *= 12.0;
+
+    const colorB = generateColor();
+    colorB.r *= 12.0;
+    colorB.g *= 12.0;
+    colorB.b *= 12.0;
+
+    splat(0.28, 0.60, 320, -120, colorA);
+    splat(0.72, 0.40, -320, 120, colorB);
+    splat(0.50, 0.52, 0, 260, colorA);
 }
 
 function bindBackgroundInteraction () {
@@ -1573,6 +1821,25 @@ function splatSingle (x, y, dx, dy, color) {
     gl.uniform3f(splatProgram.uniforms.color, color.r, color.g, color.b);
     blit(dye.write);
     dye.swap();
+
+    if (config.ENABLE_MHD && magneticPotential != null) {
+        const magneticKick = Math.max(-1.0, Math.min(1.0, (dx - dy) * 0.00015)) * config.MAGNETIC_INJECTION;
+        splatMagneticPotential(x, y, magneticKick);
+    }
+}
+
+function splatMagneticPotential (x, y, amplitude) {
+    if (Math.abs(amplitude) < 1e-6)
+        return;
+
+    splatProgram.bind();
+    gl.uniform1i(splatProgram.uniforms.uTarget, magneticPotential.read.attach(0));
+    gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
+    gl.uniform2f(splatProgram.uniforms.point, x, y);
+    gl.uniform3f(splatProgram.uniforms.color, amplitude, 0.0, 0.0);
+    gl.uniform1f(splatProgram.uniforms.radius, correctRadius((config.SPLAT_RADIUS * 0.65) / 100.0));
+    blit(magneticPotential.write);
+    magneticPotential.swap();
 }
 
 function correctRadius (radius) {
@@ -1686,10 +1953,27 @@ function correctDeltaY (delta) {
 }
 
 function generateColor () {
-    let c = HSVtoRGB(Math.random(), 1.0, 1.0);
-    c.r *= 0.15;
-    c.g *= 0.15;
-    c.b *= 0.15;
+    let hue;
+    const rand = Math.random();
+
+    if (rand < 0.35)
+        hue = 0.52 + Math.random() * 0.08;
+    else if (rand < 0.6)
+        hue = 0.98 + Math.random() * 0.04;
+    else if (rand < 0.8)
+        hue = 0.02 + Math.random() * 0.06;
+    else
+        hue = 0.75 + Math.random() * 0.15;
+
+    hue = wrap(hue, 0, 1);
+
+    const saturation = 0.5 + Math.random() * 0.5;
+    const value = 0.7 + Math.random() * 0.3;
+    let c = HSVtoRGB(hue, saturation, value);
+
+    c.r *= 0.06;
+    c.g *= 0.06;
+    c.b *= 0.06;
     return c;
 }
 
