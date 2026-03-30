@@ -21,7 +21,7 @@
         bindModalClose(modal, closeBtn);
 
         try {
-            const response = await fetch("../papers.bib", { cache: "no-store" });
+            const response = await fetch("./papers.bib", { cache: "no-store" });
             if (!response.ok) {
                 throw new Error("Could not load papers.bib");
             }
