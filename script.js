@@ -69,58 +69,62 @@ const canvas = document.getElementById('fluid-canvas') || document.getElementsBy
 resizeCanvas();
 
 let config = {
-    SIM_RESOLUTION: 64,
+    SIM_RESOLUTION: 32,
     DYE_RESOLUTION: 1024,
     CAPTURE_RESOLUTION: 512,
-    DENSITY_DISSIPATION: 0.0001,
-    VELOCITY_DISSIPATION: 0.02,
+    DENSITY_DISSIPATION: 0.001,
+    VELOCITY_DISSIPATION: 0.01,
+    MAGNETIC_DISSIPATION: 0.04,
+    MAGNETIC_STRETCH: 0.15,
+    MAGNETIC_FORCE: 0.06,
+    MAGNETIC_SEED_STRENGTH: 140,
     PRESSURE: 0.8,
-    PRESSURE_ITERATIONS: 40,
-    CURL: 50,
-    SPLAT_RADIUS: 0.6,
-    SPLAT_FORCE: 2000,
+    PRESSURE_ITERATIONS: 20,
+    CURL: 30,
+    SPLAT_RADIUS: 0.25,
+    SPLAT_FORCE: 6000,
     SHADING: true,
     COLORFUL: true,
-    COLOR_UPDATE_SPEED: 0.5,
+    COLOR_UPDATE_SPEED: 10,
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
     TRANSPARENT: false,
     BLOOM: true,
-    BLOOM_ITERATIONS: 12,
-    BLOOM_RESOLUTION: 512,
-    BLOOM_INTENSITY: 1.8,
-    BLOOM_THRESHOLD: 0.2,
-    BLOOM_SOFT_KNEE: 0.8,
-    SUNRAYS: false,
+    BLOOM_ITERATIONS: 8,
+    BLOOM_RESOLUTION: 256,
+    BLOOM_INTENSITY: 0.8,
+    BLOOM_THRESHOLD: 0.6,
+    BLOOM_SOFT_KNEE: 0.7,
+    SUNRAYS: true,
     SUNRAYS_RESOLUTION: 196,
     SUNRAYS_WEIGHT: 1.0,
-    ENABLE_MHD: true,
-    LORENTZ_SCALE: 0.4,
-    MAGNETIC_DIFFUSIVITY: 0.2,
-    MAGNETIC_VISUALIZATION: 0.14,
-    MAGNETIC_INJECTION: 0.35,
+    SUPERNOVA_DRIVING: true,
+    SUPERNOVA_RATE: 2.2,
+    SUPERNOVA_FORCE: 550,
+    SUPERNOVA_DYE: 1.8,
+    SUPERNOVA_SEPARATION: 0.03,
 }
 
 if (isBackgroundMode) {
     config.DYE_RESOLUTION = 1024;
-    config.SIM_RESOLUTION = 128;
-    config.DENSITY_DISSIPATION = 0.00008;
-    config.VELOCITY_DISSIPATION = 0.018;
-    config.PRESSURE_ITERATIONS = 45;
-    config.SPLAT_FORCE = 1800;
-    config.SPLAT_RADIUS = 0.7;
+    config.SIM_RESOLUTION = 96;
+    config.DENSITY_DISSIPATION = 0.4;
+    config.VELOCITY_DISSIPATION = 0.28;
+    config.MAGNETIC_DISSIPATION = 0.01;
+    config.MAGNETIC_STRETCH = 0.25;
+    config.MAGNETIC_FORCE = 0.2;
+    config.MAGNETIC_SEED_STRENGTH = 250;
+    config.SPLAT_FORCE = 5200;
+    config.SPLAT_RADIUS = 0.26;
     config.BLOOM = true;
-    config.BLOOM_INTENSITY = 2.0;
-    config.BLOOM_THRESHOLD = 0.18;
-    config.BLOOM_SOFT_KNEE = 0.85;
-    config.COLOR_UPDATE_SPEED = 0.35;
+    config.BLOOM_INTENSITY = 0.65;
+    config.BLOOM_THRESHOLD = 0.55;
     config.SUNRAYS = false;
-    config.BACK_COLOR = { r: 0, g: 0, b: 0 };
-    config.ENABLE_MHD = true;
-    config.LORENTZ_SCALE = 0.08;
-    config.MAGNETIC_DIFFUSIVITY = 0.55;
-    config.MAGNETIC_VISUALIZATION = 0.18;
-    config.MAGNETIC_INJECTION = 0.4;
+    config.BACK_COLOR = { r: 7, g: 19, b: 32 };
+    config.SUPERNOVA_RATE = 4.0;
+    config.SUPERNOVA_FORCE = 700;
+    config.SUPERNOVA_DYE = 2.2;
+    config.SUPERNOVA_SEPARATION = 0.035;
 }
 
 const backgroundPointers = new Map();
@@ -273,15 +277,12 @@ function startGUI () {
     sunraysFolder.add(config, 'SUNRAYS').name('enabled').onFinishChange(updateKeywords);
     sunraysFolder.add(config, 'SUNRAYS_WEIGHT', 0.3, 1.0).name('weight');
 
-    let magneticFolder = gui.addFolder('Magnetic');
-    magneticFolder.add(config, 'ENABLE_MHD').name('enabled').onFinishChange(() => {
-        updateKeywords();
-        initFramebuffers();
-    });
-    magneticFolder.add(config, 'LORENTZ_SCALE', 0.0, 0.5).name('lorentz scale');
-    magneticFolder.add(config, 'MAGNETIC_DIFFUSIVITY', 0.0, 2.0).name('diffusivity');
-    magneticFolder.add(config, 'MAGNETIC_VISUALIZATION', 0.0, 1.0).name('field glow');
-    magneticFolder.add(config, 'MAGNETIC_INJECTION', 0.0, 1.0).name('injection');
+    let drivingFolder = gui.addFolder('Driving');
+    drivingFolder.add(config, 'SUPERNOVA_DRIVING').name('enabled');
+    drivingFolder.add(config, 'SUPERNOVA_RATE', 0.0, 10.0).name('events / sec');
+    drivingFolder.add(config, 'SUPERNOVA_FORCE', 0.0, 2000.0).name('kick force');
+    drivingFolder.add(config, 'SUPERNOVA_DYE', 0.0, 8.0).name('fluid injection');
+    drivingFolder.add(config, 'SUPERNOVA_SEPARATION', 0.0, 0.1).name('stirring scale');
 
     let captureFolder = gui.addFolder('Capture');
     captureFolder.addColor(config, 'BACK_COLOR').name('background color');
@@ -611,18 +612,12 @@ const displayShaderSource = `
     uniform sampler2D uBloom;
     uniform sampler2D uSunrays;
     uniform sampler2D uDithering;
-    uniform sampler2D uMagneticPotential;
     uniform vec2 ditherScale;
     uniform vec2 texelSize;
-    uniform float magneticVisualStrength;
 
     vec3 linearToGamma (vec3 color) {
         color = max(color, vec3(0));
         return max(1.055 * pow(color, vec3(0.416666667)) - 0.055, vec3(0));
-    }
-
-    vec2 wrapUv (vec2 uv) {
-        return fract(uv + 1.0);
     }
 
     void main () {
@@ -662,23 +657,6 @@ const displayShaderSource = `
         bloom += noise / 255.0;
         bloom = linearToGamma(bloom);
         c += bloom;
-    #endif
-
-    #ifdef MHD
-        float AzL = texture2D(uMagneticPotential, wrapUv(vL)).x;
-        float AzR = texture2D(uMagneticPotential, wrapUv(vR)).x;
-        float AzT = texture2D(uMagneticPotential, wrapUv(vT)).x;
-        float AzB = texture2D(uMagneticPotential, wrapUv(vB)).x;
-        float AzC = texture2D(uMagneticPotential, vUv).x;
-
-        float Bx = 0.5 * (AzT - AzB);
-        float By = -0.5 * (AzR - AzL);
-        float fieldStrength = length(vec2(Bx, By));
-        float currentSheet = abs(AzL + AzR + AzT + AzB - 4.0 * AzC);
-
-        vec3 fieldColor = vec3(0.2, 0.5, 1.0) * fieldStrength;
-        vec3 reconnectionColor = vec3(1.0, 0.35, 0.2) * currentSheet;
-        c += (fieldColor + reconnectionColor) * magneticVisualStrength;
     #endif
 
         float a = max(c.r, max(c.g, c.b));
@@ -951,6 +929,90 @@ const vorticityShader = compileShader(gl.FRAGMENT_SHADER, `
     }
 `);
 
+const inductionShader = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float;
+    precision highp sampler2D;
+
+    varying vec2 vUv;
+    varying vec2 vL;
+    varying vec2 vR;
+    varying vec2 vT;
+    varying vec2 vB;
+    uniform sampler2D uVelocity;
+    uniform sampler2D uMagnetic;
+    uniform float dt;
+    uniform float stretch;
+
+    vec2 wrapUv (vec2 uv) {
+        return fract(uv + 1.0);
+    }
+
+    void main () {
+        vec2 velocityL = texture2D(uVelocity, wrapUv(vL)).xy;
+        vec2 velocityR = texture2D(uVelocity, wrapUv(vR)).xy;
+        vec2 velocityT = texture2D(uVelocity, wrapUv(vT)).xy;
+        vec2 velocityB = texture2D(uVelocity, wrapUv(vB)).xy;
+        vec2 magnetic = texture2D(uMagnetic, vUv).xy;
+
+        float dudx = 0.5 * (velocityR.x - velocityL.x);
+        float dudy = 0.5 * (velocityT.x - velocityB.x);
+        float dvdx = 0.5 * (velocityR.y - velocityL.y);
+        float dvdy = 0.5 * (velocityT.y - velocityB.y);
+
+        vec2 stretching = vec2(
+            magnetic.x * dudx + magnetic.y * dudy,
+            magnetic.x * dvdx + magnetic.y * dvdy
+        );
+
+        magnetic += stretch * stretching * dt;
+        magnetic = min(max(magnetic, -1000.0), 1000.0);
+        gl_FragColor = vec4(magnetic, 0.0, 1.0);
+    }
+`);
+
+const lorentzForceShader = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float;
+    precision highp sampler2D;
+
+    varying vec2 vUv;
+    varying vec2 vL;
+    varying vec2 vR;
+    varying vec2 vT;
+    varying vec2 vB;
+    uniform sampler2D uVelocity;
+    uniform sampler2D uMagnetic;
+    uniform float dt;
+    uniform float forceScale;
+
+    vec2 wrapUv (vec2 uv) {
+        return fract(uv + 1.0);
+    }
+
+    void main () {
+        vec2 magneticL = texture2D(uMagnetic, wrapUv(vL)).xy;
+        vec2 magneticR = texture2D(uMagnetic, wrapUv(vR)).xy;
+        vec2 magneticT = texture2D(uMagnetic, wrapUv(vT)).xy;
+        vec2 magneticB = texture2D(uMagnetic, wrapUv(vB)).xy;
+        vec2 magneticC = texture2D(uMagnetic, vUv).xy;
+
+        float b2L = dot(magneticL, magneticL);
+        float b2R = dot(magneticR, magneticR);
+        float b2T = dot(magneticT, magneticT);
+        float b2B = dot(magneticB, magneticB);
+
+        vec2 magneticPressure = 0.25 * vec2(b2R - b2L, b2T - b2B);
+        vec2 gradBx = 0.5 * vec2(magneticR.x - magneticL.x, magneticT.x - magneticB.x);
+        vec2 gradBy = 0.5 * vec2(magneticR.y - magneticL.y, magneticT.y - magneticB.y);
+        vec2 tension = vec2(dot(magneticC, gradBx), dot(magneticC, gradBy));
+
+        vec2 force = tension - magneticPressure;
+        vec2 velocity = texture2D(uVelocity, vUv).xy;
+        velocity += force * forceScale * dt;
+        velocity = min(max(velocity, -1000.0), 1000.0);
+        gl_FragColor = vec4(velocity, 0.0, 1.0);
+    }
+`);
+
 const pressureShader = compileShader(gl.FRAGMENT_SHADER, `
     precision mediump float;
     precision mediump sampler2D;
@@ -1006,84 +1068,6 @@ const gradientSubtractShader = compileShader(gl.FRAGMENT_SHADER, `
     }
 `);
 
-const inductionShader = compileShader(gl.FRAGMENT_SHADER, `
-    precision highp float;
-    precision highp sampler2D;
-
-    varying vec2 vUv;
-    varying vec2 vL;
-    varying vec2 vR;
-    varying vec2 vT;
-    varying vec2 vB;
-    uniform sampler2D uVelocity;
-    uniform sampler2D uMagneticPotential;
-    uniform vec2 texelSize;
-    uniform float magneticDiffusivity;
-    uniform float dt;
-
-    vec2 wrapUv (vec2 uv) {
-        return fract(uv + 1.0);
-    }
-
-    void main () {
-        float AzL = texture2D(uMagneticPotential, wrapUv(vL)).x;
-        float AzR = texture2D(uMagneticPotential, wrapUv(vR)).x;
-        float AzT = texture2D(uMagneticPotential, wrapUv(vT)).x;
-        float AzB = texture2D(uMagneticPotential, wrapUv(vB)).x;
-        float AzC = texture2D(uMagneticPotential, vUv).x;
-
-        vec2 vel = texture2D(uVelocity, vUv).xy;
-
-        float dAzdx = 0.5 * (AzR - AzL);
-        float dAzdy = 0.5 * (AzT - AzB);
-        float laplacian = AzL + AzR + AzT + AzB - 4.0 * AzC;
-
-        float advection = -(vel.x * dAzdx + vel.y * dAzdy);
-        float nextAz = AzC + (advection + magneticDiffusivity * laplacian) * dt;
-
-        nextAz = clamp(nextAz, -50.0, 50.0);
-        gl_FragColor = vec4(nextAz, 0.0, 0.0, 1.0);
-    }
-`);
-
-const lorentzShader = compileShader(gl.FRAGMENT_SHADER, `
-    precision highp float;
-    precision highp sampler2D;
-
-    varying vec2 vUv;
-    varying vec2 vL;
-    varying vec2 vR;
-    varying vec2 vT;
-    varying vec2 vB;
-    uniform sampler2D uVelocity;
-    uniform sampler2D uMagneticPotential;
-    uniform float lorentzScale;
-    uniform float dt;
-
-    vec2 wrapUv (vec2 uv) {
-        return fract(uv + 1.0);
-    }
-
-    void main () {
-        float AzL = texture2D(uMagneticPotential, wrapUv(vL)).x;
-        float AzR = texture2D(uMagneticPotential, wrapUv(vR)).x;
-        float AzT = texture2D(uMagneticPotential, wrapUv(vT)).x;
-        float AzB = texture2D(uMagneticPotential, wrapUv(vB)).x;
-        float AzC = texture2D(uMagneticPotential, vUv).x;
-
-        float Bx = 0.5 * (AzT - AzB);
-        float By = -0.5 * (AzR - AzL);
-        float Jz = -(AzL + AzR + AzT + AzB - 4.0 * AzC);
-
-        vec2 lorentzForce = Jz * vec2(-By, Bx) * lorentzScale;
-
-        vec2 vel = texture2D(uVelocity, vUv).xy;
-        vel += lorentzForce * dt;
-        vel = min(max(vel, -1000.0), 1000.0);
-        gl_FragColor = vec4(vel, 0.0, 1.0);
-    }
-`);
-
 const blit = (() => {
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
@@ -1121,10 +1105,10 @@ function CHECK_FRAMEBUFFER_STATUS () {
 
 let dye;
 let velocity;
+let magnetic;
 let divergence;
 let curl;
 let pressure;
-let magneticPotential;
 let bloom;
 let bloomFramebuffers = [];
 let sunrays;
@@ -1147,10 +1131,10 @@ const advectionProgram       = new Program(baseVertexShader, advectionShader);
 const divergenceProgram      = new Program(baseVertexShader, divergenceShader);
 const curlProgram            = new Program(baseVertexShader, curlShader);
 const vorticityProgram       = new Program(baseVertexShader, vorticityShader);
+const inductionProgram       = new Program(baseVertexShader, inductionShader);
+const lorentzForceProgram    = new Program(baseVertexShader, lorentzForceShader);
 const pressureProgram        = new Program(baseVertexShader, pressureShader);
 const gradienSubtractProgram = new Program(baseVertexShader, gradientSubtractShader);
-const inductionProgram       = new Program(baseVertexShader, inductionShader);
-const lorentzProgram         = new Program(baseVertexShader, lorentzShader);
 
 const displayMaterial = new Material(baseVertexShader, displayShaderSource);
 
@@ -1176,14 +1160,12 @@ function initFramebuffers () {
     else
         velocity = resizeDoubleFBO(velocity, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
 
-    if (config.ENABLE_MHD) {
-        if (magneticPotential == null)
-            magneticPotential = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, filtering);
-        else
-            magneticPotential = resizeDoubleFBO(magneticPotential, simRes.width, simRes.height, r.internalFormat, r.format, texType, filtering);
+    if (magnetic == null) {
+        magnetic = createDoubleFBO(simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
+        seedMagneticField();
     }
     else {
-        magneticPotential = null;
+        magnetic = resizeDoubleFBO(magnetic, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
     }
 
     divergence = createFBO      (simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
@@ -1347,7 +1329,6 @@ function updateKeywords () {
     if (config.SHADING) displayKeywords.push("SHADING");
     if (config.BLOOM) displayKeywords.push("BLOOM");
     if (config.SUNRAYS) displayKeywords.push("SUNRAYS");
-    if (config.ENABLE_MHD) displayKeywords.push("MHD");
     displayMaterial.setKeywords(displayKeywords);
 }
 
@@ -1423,6 +1404,8 @@ function applyInputs () {
 function step (dt) {
     gl.disable(gl.BLEND);
 
+    applySupernovaDriving(dt);
+
     curlProgram.bind();
     gl.uniform2f(curlProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
     gl.uniform1i(curlProgram.uniforms.uVelocity, velocity.read.attach(0));
@@ -1437,15 +1420,34 @@ function step (dt) {
     blit(velocity.write);
     velocity.swap();
 
-    if (config.ENABLE_MHD && magneticPotential != null) {
-        lorentzProgram.bind();
-        gl.uniform1i(lorentzProgram.uniforms.uMagneticPotential, magneticPotential.read.attach(0));
-        gl.uniform1i(lorentzProgram.uniforms.uVelocity, velocity.read.attach(1));
-        gl.uniform1f(lorentzProgram.uniforms.lorentzScale, config.LORENTZ_SCALE);
-        gl.uniform1f(lorentzProgram.uniforms.dt, dt);
-        blit(velocity.write);
-        velocity.swap();
-    }
+    inductionProgram.bind();
+    gl.uniform2f(inductionProgram.uniforms.texelSize, magnetic.texelSizeX, magnetic.texelSizeY);
+    gl.uniform1i(inductionProgram.uniforms.uVelocity, velocity.read.attach(0));
+    gl.uniform1i(inductionProgram.uniforms.uMagnetic, magnetic.read.attach(1));
+    gl.uniform1f(inductionProgram.uniforms.dt, dt);
+    gl.uniform1f(inductionProgram.uniforms.stretch, config.MAGNETIC_STRETCH);
+    blit(magnetic.write);
+    magnetic.swap();
+
+    advectionProgram.bind();
+    gl.uniform2f(advectionProgram.uniforms.texelSize, magnetic.texelSizeX, magnetic.texelSizeY);
+    if (!ext.supportLinearFiltering)
+        gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, magnetic.texelSizeX, magnetic.texelSizeY);
+    gl.uniform1i(advectionProgram.uniforms.uVelocity, velocity.read.attach(0));
+    gl.uniform1i(advectionProgram.uniforms.uSource, magnetic.read.attach(1));
+    gl.uniform1f(advectionProgram.uniforms.dt, dt);
+    gl.uniform1f(advectionProgram.uniforms.dissipation, config.MAGNETIC_DISSIPATION);
+    blit(magnetic.write);
+    magnetic.swap();
+
+    lorentzForceProgram.bind();
+    gl.uniform2f(lorentzForceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    gl.uniform1i(lorentzForceProgram.uniforms.uVelocity, velocity.read.attach(0));
+    gl.uniform1i(lorentzForceProgram.uniforms.uMagnetic, magnetic.read.attach(1));
+    gl.uniform1f(lorentzForceProgram.uniforms.dt, dt);
+    gl.uniform1f(lorentzForceProgram.uniforms.forceScale, config.MAGNETIC_FORCE);
+    blit(velocity.write);
+    velocity.swap();
 
     divergenceProgram.bind();
     gl.uniform2f(divergenceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
@@ -1485,17 +1487,6 @@ function step (dt) {
     gl.uniform1f(advectionProgram.uniforms.dissipation, config.VELOCITY_DISSIPATION);
     blit(velocity.write);
     velocity.swap();
-
-    if (config.ENABLE_MHD && magneticPotential != null) {
-        inductionProgram.bind();
-        gl.uniform2f(inductionProgram.uniforms.texelSize, magneticPotential.texelSizeX, magneticPotential.texelSizeY);
-        gl.uniform1i(inductionProgram.uniforms.uVelocity, velocity.read.attach(0));
-        gl.uniform1i(inductionProgram.uniforms.uMagneticPotential, magneticPotential.read.attach(1));
-        gl.uniform1f(inductionProgram.uniforms.magneticDiffusivity, config.MAGNETIC_DIFFUSIVITY);
-        gl.uniform1f(inductionProgram.uniforms.dt, dt);
-        blit(magneticPotential.write);
-        magneticPotential.swap();
-    }
 
     if (!ext.supportLinearFiltering)
         gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
@@ -1549,10 +1540,6 @@ function drawDisplay (target) {
     if (config.SHADING)
         gl.uniform2f(displayMaterial.uniforms.texelSize, 1.0 / width, 1.0 / height);
     gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
-    if (config.ENABLE_MHD && magneticPotential != null) {
-        gl.uniform1i(displayMaterial.uniforms.uMagneticPotential, magneticPotential.read.attach(4));
-        gl.uniform1f(displayMaterial.uniforms.magneticVisualStrength, config.MAGNETIC_VISUALIZATION);
-    }
     if (config.BLOOM) {
         gl.uniform1i(displayMaterial.uniforms.uBloom, bloom.attach(1));
         gl.uniform1i(displayMaterial.uniforms.uDithering, ditheringTexture.attach(2));
@@ -1642,50 +1629,97 @@ function splatPointer (pointer) {
 }
 
 function multipleSplats (amount) {
-    const clusterCount = Math.max(3, Math.min(6, Math.floor(amount / 8) + 2));
-    const clusters = [];
-    for (let i = 0; i < clusterCount; i++) {
-        clusters.push({
-            x: 0.12 + Math.random() * 0.76,
-            y: 0.12 + Math.random() * 0.76
-        });
-    }
-
     for (let i = 0; i < amount; i++) {
-        const cluster = clusters[Math.floor(Math.random() * clusters.length)];
         const color = generateColor();
-        color.r *= 8.0;
-        color.g *= 8.0;
-        color.b *= 8.0;
-
-        const spread = 0.12 + Math.random() * 0.12;
-        const x = clamp01(cluster.x + (Math.random() - 0.5) * spread);
-        const y = clamp01(cluster.y + (Math.random() - 0.5) * spread);
-
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 200 + Math.random() * 400;
-        const dx = Math.cos(angle) * speed;
-        const dy = Math.sin(angle) * speed;
+        color.r *= 10.0;
+        color.g *= 10.0;
+        color.b *= 10.0;
+        const x = Math.random();
+        const y = Math.random();
+        const dx = 1000 * (Math.random() - 0.5);
+        const dy = 1000 * (Math.random() - 0.5);
         splat(x, y, dx, dy, color);
     }
 }
 
+function applySupernovaDriving (dt) {
+    if (!config.SUPERNOVA_DRIVING)
+        return;
+
+    let expectedEvents = config.SUPERNOVA_RATE * dt;
+    let eventCount = Math.floor(expectedEvents);
+    if (Math.random() < expectedEvents - eventCount)
+        eventCount++;
+
+    for (let i = 0; i < eventCount; i++) {
+        const centerX = Math.random();
+        const centerY = Math.random();
+        const angle = Math.random() * Math.PI * 2.0;
+        const tangentX = Math.cos(angle);
+        const tangentY = Math.sin(angle);
+        const normalX = -tangentY;
+        const normalY = tangentX;
+
+        const separation = config.SUPERNOVA_SEPARATION * (0.6 + Math.random() * 0.8);
+        const force = config.SUPERNOVA_FORCE * (0.7 + Math.random() * 0.6);
+        const dyeScale = config.SUPERNOVA_DYE * (0.7 + Math.random() * 0.6);
+
+        const xA = wrap(centerX + normalX * separation, 0, 1);
+        const yA = wrap(centerY + normalY * separation, 0, 1);
+        const xB = wrap(centerX - normalX * separation, 0, 1);
+        const yB = wrap(centerY - normalY * separation, 0, 1);
+
+        let colorA = generateColor();
+        colorA.r *= dyeScale;
+        colorA.g *= dyeScale;
+        colorA.b *= dyeScale;
+
+        let colorB = generateColor();
+        colorB.r *= dyeScale;
+        colorB.g *= dyeScale;
+        colorB.b *= dyeScale;
+
+        // Opposing kicks inject turbulence while keeping net momentum low.
+        splat(xA, yA, tangentX * force, tangentY * force, colorA);
+        splat(xB, yB, -tangentX * force, -tangentY * force, colorB);
+
+        let coreColor = generateColor();
+        coreColor.r *= 0.5 * dyeScale;
+        coreColor.g *= 0.5 * dyeScale;
+        coreColor.b *= 0.5 * dyeScale;
+        splat(centerX, centerY, 0.0, 0.0, coreColor);
+    }
+}
+
 function seedBackgroundFluid () {
-    multipleSplats(52);
+    const colorA = { r: 1.0, g: 1.7, b: 2.7 };
+    const colorB = { r: 0.8, g: 1.5, b: 2.4 };
+    splat(0.32, 0.55, 420, 0, colorA);
+    splat(0.68, 0.45, -420, 0, colorB);
+}
 
-    const colorA = generateColor();
-    colorA.r *= 12.0;
-    colorA.g *= 12.0;
-    colorA.b *= 12.0;
+function seedMagneticField () {
+    const seedCount = isBackgroundMode ? 12 : 8;
+    const seedStrength = config.MAGNETIC_SEED_STRENGTH;
 
-    const colorB = generateColor();
-    colorB.r *= 12.0;
-    colorB.g *= 12.0;
-    colorB.b *= 12.0;
+    splatProgram.bind();
+    gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
+    gl.uniform1f(splatProgram.uniforms.radius, correctRadius(config.SPLAT_RADIUS / 130.0));
 
-    splat(0.28, 0.60, 320, -120, colorA);
-    splat(0.72, 0.40, -320, 120, colorB);
-    splat(0.50, 0.52, 0, 260, colorA);
+    for (let i = 0; i < seedCount; i++) {
+        const angle = Math.random() * Math.PI * 2.0;
+        const magnitude = seedStrength * (0.6 + Math.random() * 0.8);
+        const x = Math.random();
+        const y = Math.random();
+        const bx = Math.cos(angle) * magnitude;
+        const by = Math.sin(angle) * magnitude;
+
+        gl.uniform1i(splatProgram.uniforms.uTarget, magnetic.read.attach(0));
+        gl.uniform2f(splatProgram.uniforms.point, x, y);
+        gl.uniform3f(splatProgram.uniforms.color, bx, by, 0.0);
+        blit(magnetic.write);
+        magnetic.swap();
+    }
 }
 
 function bindBackgroundInteraction () {
@@ -1762,25 +1796,6 @@ function splatSingle (x, y, dx, dy, color) {
     gl.uniform3f(splatProgram.uniforms.color, color.r, color.g, color.b);
     blit(dye.write);
     dye.swap();
-
-    if (config.ENABLE_MHD && magneticPotential != null) {
-        const magneticKick = Math.max(-1.0, Math.min(1.0, (dx - dy) * 0.00015)) * config.MAGNETIC_INJECTION;
-        splatMagneticPotential(x, y, magneticKick);
-    }
-}
-
-function splatMagneticPotential (x, y, amplitude) {
-    if (Math.abs(amplitude) < 1e-6)
-        return;
-
-    splatProgram.bind();
-    gl.uniform1i(splatProgram.uniforms.uTarget, magneticPotential.read.attach(0));
-    gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
-    gl.uniform2f(splatProgram.uniforms.point, x, y);
-    gl.uniform3f(splatProgram.uniforms.color, amplitude, 0.0, 0.0);
-    gl.uniform1f(splatProgram.uniforms.radius, correctRadius((config.SPLAT_RADIUS * 0.65) / 100.0));
-    blit(magneticPotential.write);
-    magneticPotential.swap();
 }
 
 function correctRadius (radius) {
@@ -1894,27 +1909,10 @@ function correctDeltaY (delta) {
 }
 
 function generateColor () {
-    let hue;
-    const rand = Math.random();
-
-    if (rand < 0.35)
-        hue = 0.52 + Math.random() * 0.08;
-    else if (rand < 0.6)
-        hue = 0.98 + Math.random() * 0.04;
-    else if (rand < 0.8)
-        hue = 0.02 + Math.random() * 0.06;
-    else
-        hue = 0.75 + Math.random() * 0.15;
-
-    hue = wrap(hue, 0, 1);
-
-    const saturation = 0.5 + Math.random() * 0.5;
-    const value = 0.7 + Math.random() * 0.3;
-    let c = HSVtoRGB(hue, saturation, value);
-
-    c.r *= 0.06;
-    c.g *= 0.06;
-    c.b *= 0.06;
+    let c = HSVtoRGB(Math.random(), 1.0, 1.0);
+    c.r *= 0.15;
+    c.g *= 0.15;
+    c.b *= 0.15;
     return c;
 }
 
